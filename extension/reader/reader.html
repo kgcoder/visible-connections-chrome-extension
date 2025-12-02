@@ -1,0 +1,173 @@
+
+<div id="AllDocumentsContainer">
+    <div id="OneDocumentContainer">
+        
+        <div id="CurrentDocumentTopBar">
+          <div id="CurrentDocumentTopBarRow">
+            <div title="Close the Reader" id="CurrentDocumentCloseButton" class="DocumentTopBarButtonWrapper">
+              <!-- <a id="CurrentDocumentCloseButton" class="DocumentTopBarButton" href="#"></a> -->
+            </div>
+          
+            
+            <div  id="CurrentDocumentInfoButtonWrapper" class="DocumentTopBarButtonWrapper">
+              <div title="Page info" id="CurrentDocumentInfoButton" class="DocumentTopBarButton" href="#">
+                <span id="CurrentDocumentInfoButtonCountDiv" class="CurrentDocumentTopButtonCountDiv"></span>
+              </div>
+            </div>
+
+            <div title="Download all connected documents" id="CurrentDocumentDownloadAllDocsButton"  class="DocumentTopBarButtonWrapper"></div>
+
+
+            <div title="Toggle full screen" id="CurrentDocumentFullScreenButton"  class="DocumentTopBarButtonWrapper">
+            <!-- <a id="CurrentDocumentFullScreenButton" class="DocumentTopBarButton" href="#"></a> -->
+            </div>
+            <div id="CurrentDocumentExportButton" class="DocumentTopBarButtonWrapper"></div>
+
+            <div title="Veiw Page Source" id="CurrentDocumentSourceCodeButton" class="DocumentTopBarButtonWrapper"></div>
+
+            <div title="Center collage" id="CurrentDocumentCenterCollageButton"  class="DocumentTopBarButtonWrapper"></div>
+
+  
+            <div  id="CurrentDocumentRightPanelButton" class="DocumentTopBarButtonWrapper">
+            </div>
+            <div id="CurrentDocumentLeftPanelButton" class="DocumentTopBarButtonWrapper">
+            </div>
+
+          
+  
+            <div class="spacer"></div>
+  
+            <a id="CurrentDocumentTitleLink" href="#"><span id="CurrentDocumentTitleSpan"></span></a>
+
+            <div id="CurrentDocumentEmbeddingSymbol" class="DocumentTopBarButtonWrapper" title="This document embeds another document. Click on the title to view the embedded document separately."></div>
+
+
+            <div id="mainDocSpinner"></div>
+
+          </div>
+
+
+
+
+        </div>
+
+
+
+      <div id="CurrentDocumentMainRow" class="DocumentMainRow">
+
+        <div id="CurrentDocumentLeftPanel" class="DocumentSidePanel theme-light"></div>
+
+        <div id="CurrentDocument" class="DocumentColumn theme-light">
+            <div id="CurrentDocumentTopPanel" class="DocumentTopPanel">
+              <a id="CurrentDocumentTopPanelLogoLink" class="TopPanelLogoLink" href="#">
+                <img id="CurrentDocumentTopPanelLogo" src="" width="150px" height="50px"/>
+                <span id="CurrentDocumentTopPanelTitle" class="TopPanelTitle"></span>
+              </a>
+              <div class="spacer"></div>
+              <div id="CurrentDocumentTopPanelOptionsRow" class="DocumentTopPanelOptionsRow"></div>
+              <div id="LeftSandwichButton" class="SandwichButton">
+                <div class="LeftSandwichLine"></div>
+                <div class="LeftSandwichLine SandwichMiddleLine"></div>
+                <div class="LeftSandwichLine"></div>
+              </div>
+            </div>
+            <div id="CurrentDocumentHeader" class="HeaderDiv"></div>
+            <div id="CurrentDocumentMainDiv">
+              <a id="MainDocDownloadLink">Download main document</a>
+
+            </div>
+            <textarea id="CurrentDocumentTextarea" class="NoteEditingDiv"></textarea>
+
+            <div id="CurrentDocumentBottomPanel" class="DocumentBottomPanel">
+              <div id="CurrentDocumentBottomPanelRow" class="DocumentBottomPanelRow"></div>
+              <div id="CurrentDocumentBottomPanelBottomMessage" class="DocumentBottomPanelBottomMessage"></div>
+            </div>
+
+           
+
+            <div id="CurrentDocumentMainCollageDiv">
+              <canvas id="CurrentDocumentMainCollageCanvas"></canvas>
+            </div>
+
+            <div id="CurrentDocumentDropDownMenu" class="DocumentDropDownMenu"></div>
+        </div>
+
+        <div id="CurrentDocumentRightPanel" class="DocumentSidePanel theme-light"></div>
+
+        <div id="CurrentDocumentInfoContainer" >
+          <div id="CurrentDocumentInfo"></div>
+        </div>
+
+        <div id="CurrentDocumentExportContainer">
+        </div>
+
+      </div>
+
+  
+    </div>
+    <div id="middle-canvas-topDiv">
+      <svg id="svgArrow" width="28" height="12" viewBox="0 0 28 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      </svg>
+        <a id="LinksOpenButton"></a>
+
+    </div>
+
+    <div id="LinksListContainerDiv">
+      <div id="LinksListTopRow">
+        <div id="LinksListTopRowLeftSortButtonContainer"></div>
+        <div id="LinksListTopRowMiddleSpacer"></div>
+        <div id="LinksListTopRowRightSortButtonContainer"></div>
+        <div id="LinksListTopRowEndSpacer"></div>
+      </div>
+      <div id="FlinksScrollDiv" class="scroll-container"></div>
+        <span id="LinksListModificationMessage">Floating links were modified</span>
+      <div id="LinksListBottomRow">
+        <button id="LinksListCloseButton" class="CancelButton">Close</button>
+        <div class="LinksListBottomRowMiddleSpacer"></div>
+      
+        <button id="LinksListOriginalLinksButton" class="CancelButton">Show original flinks</button>
+        <div id="LinksListOriginalLinksSpacer" class="LinksListBottomRowMiddleSpacer"></div>
+      
+        <button id="LinksListFixButton" class="ActionButton">Fix all</button>
+
+      </div>
+    </div>
+
+    <div id="AllRightDocumentsContainer">
+      <div id="RightDocumentsTabsContainer"></div>
+      <div id="RightDocumentsTopBar">
+       
+        <!-- <div id="RightDocumentExportButton" class="DocumentTopBarButtonWrapper"></div> -->
+
+        <div title="Veiw Page Source" id="RightDocumentSourceCodeButton" class="DocumentTopBarButtonWrapper"></div>
+
+  
+        <div id="RightDocumentRightPanelButton" class="DocumentTopBarButtonWrapper">
+        </div>
+        <div id="RightDocumentLeftPanelButton" class="DocumentTopBarButtonWrapper">
+        </div>
+
+        <div title="Center collage" id="RightDocumentCenterCollageButton"  class="DocumentTopBarButtonWrapper"></div>
+
+
+        <div class="spacer"></div>
+
+        <a id="RightDocumentTitleLink"><span id="RightDocumentTitleSpan"></span></a>
+
+   
+      
+      </div>
+      <div id="RightDocumentCollectionContainer"></div>
+
+
+      <div id="RightDocumentExportContainer"></div>
+
+    </div>
+
+    <canvas id="flinks-canvas"></canvas>
+</div>
+
+
+<div id="spinner" class="spinner"></div>
+
+<div id="CurrentUrl"></div>

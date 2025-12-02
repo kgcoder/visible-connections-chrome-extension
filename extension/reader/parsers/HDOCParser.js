@@ -1,0 +1,102 @@
+/*
+Visible Connections Chrome Extension
+Copyright (c) 2025 Karen Grigorian
+Licensed under the MIT License (code)
+
+This extension uses document types defined by the Default Web project.
+All Default Web document types (current and future) are licensed under CC BY-ND 4.0.
+
+For the official list of document types and specifications, see:
+https://github.com/kgcoder/default-web
+*/
+
+import { getHeaderInfoFromXML } from "../HeaderMethods.js"
+import { getFirstElementOfArray, sanitizeHtml } from "../helpers.js"
+import FloatingLink from "../models/FloatingLink.js"
+
+export function parseHDOC(url,fullContentString){
+
+    let contentReg = /(<content(\b[^>]*)>)([\s\S]*)<\/content>/m
+    let contentMatch = fullContentString.match(contentReg)
+    
+    if (!contentMatch) return
+
+    let htmlString = contentMatch[3]
+    let firstContentTag = contentMatch[1]
+
+    const isPlainText = firstContentTag.includes('type="text"')
+
+  
+    const newXMLContentStringWithHtmlPlaceholder = fullContentString.replace(contentReg,'<content_placeholder></content_placeholder>')
+
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(newXMLContentStringWithHtmlPlaceholder, 'application/xml');
+    
+    const sanitizedHtml = isPlainText ? htmlString : sanitizeHtml(htmlString)
+    
+    let updatedFullContentString = newXMLContentStringWithHtmlPlaceholder.replace('<content_placeholder></content_placeholder>', firstContentTag + sanitizedHtml + `</content>`)
+    
+    updatedFullContentString = updatedFullContentString.replace('<content_placeholder/>', firstContentTag + sanitizedHtml + `</content>`)
+    
+
+    const rootElement = xmlDoc.documentElement;
+
+    let headerInfo
+    const headerRoot = getFirstElementOfArray(rootElement.getElementsByTagName('header'))
+
+    if (headerRoot) { 
+        headerInfo = getHeaderInfoFromXML(headerRoot)
+    }
+   
+    
+
+    
+    
+  const connectionsRoot = rootElement.querySelector('connections')
+
+    
+  const connectedDocsData = []
+  if(connectionsRoot){
+      
+    const flinkSets = connectionsRoot.querySelectorAll('doc')
+    
+
+    if(flinkSets && flinkSets.length){
+        for (let i = 0; i < flinkSets.length; i++) {
+            const flinkSet = flinkSets[i];
+            const flinkSetUrl = flinkSet.getAttribute('url')
+            const flinkSetTitle = flinkSet.getAttribute('title') ?? ''
+            const flinkSetHash = flinkSet.getAttribute('hash')
+
+            const flinksString = flinkSet.textContent
+
+            const flinks = flinksString ? flinksString.split('\n').map(line => FloatingLink.fromExportString(line.trim())).filter(flink => !!flink) : []
+
+            if(flinkSetUrl){
+                connectedDocsData.push({url:flinkSetUrl,title:flinkSetTitle,hash:flinkSetHash,flinks})
+        
+            }
+        }
+    }
+      
+
+  }
+
+
+
+
+
+
+    return {
+        url,
+        headerInfo,
+        isPlainText,
+        html:sanitizedHtml,
+        xmlString:updatedFullContentString,
+        connectedDocsData,
+        type: 'text',
+        docType:'h',
+        docSubtype:1
+    }
+}

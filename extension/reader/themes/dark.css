@@ -1,0 +1,293 @@
+.theme-dark {
+    --accent: #1a73e8;
+    --text-main: #e0e0e0;
+    --bg-main: #1e1e1e;
+    --header-footer-bg: #393838;
+    --borders:#e0e0e0;
+}
+
+.DocumentColumn.theme-dark{
+    background-color: var(--bg-main); /* dark background */
+}
+
+/* .DocumentSidePanel.theme-dark {
+    background-color: var(--bg-main);
+} */
+
+.theme-dark .StaticCommentsSection{
+    background-color: var(--bg-main);
+}
+
+.theme-dark div{
+    color: var(--text-main);
+}
+
+.theme-dark .NoteDiv{
+    background-color: var(--bg-main); /* dark background */
+}
+
+.theme-dark .NoteEditingDiv{
+    color: var(--text-main);
+}
+
+.theme-dark .DocumentTopPanel{
+    background-color: #393838;
+}
+
+.theme-dark .TopPanelTitle{
+    color:white;
+}
+
+.theme-dark .TopPanelOptionLink{
+    color:white;
+}
+
+.theme-dark .DocumentBottomPanel{
+    background-color: #393838;
+}
+
+.theme-dark .RightSandwichLine{
+    background-color: white;
+}
+
+.theme-dark .LeftSandwichLine{
+    background-color: white;
+}
+
+
+.theme-dark .DocumentDropDownMenu{
+    background-color: #393838;
+}
+
+.theme-dark .FooterSectionTitle{
+    color:white;
+}
+.theme-dark .FooterOptionLink{
+    color:white;
+}
+
+.theme-dark .DocumentBottomPanelBottomMessage{
+    color:white;
+}
+
+
+.theme-dark .NotePresentationDiv {
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--text-main);
+    padding: 2rem;
+}
+  
+  /* Lists */
+  .theme-dark ol, ul {
+    padding-inline-start: 10px;
+  }
+
+  .theme-dark li {
+    color: #e0e0e0;
+  }
+
+  .theme-dark figcaption {
+    color: #e0e0e0;
+  }
+  
+  /* Paragraphs */
+  .theme-dark p {
+    margin: 1em 0;
+    font-size: 1.05em;
+    color: #dcdcdc;
+  }
+  
+  /* Headings */
+  .theme-dark h1, h2, h3, h4, h5, h6 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 1.6em 0 0.6em;
+    color: #ffffff;
+  }
+  
+  .theme-dark h1 {
+    font-size: 2.2em;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.3em;
+  }
+  
+  .theme-dark h2 {
+    font-size: 1.8em;
+    margin-top: 2em;
+  }
+  
+  .theme-dark h3 {
+    font-size: 1.4em;
+    margin-top: 1.5em;
+    color: #cccccc;
+  }
+  
+  /* Links */
+  .theme-dark a {
+    color: #4aa3ff;
+    text-decoration: none;
+  }
+  .theme-dark a:hover {
+    text-decoration: underline;
+  }
+
+  .theme-dark a[data-static] {
+    color: rgb(36, 176, 76);
+  }
+  
+  /* Code snippets */
+  .theme-dark pre, 
+  .theme-dark code {
+    font-family: "Fira Code", monospace;
+    background-color: #3a3a3a;
+    color: #e8e8e8;
+    padding: 1px;
+    /* padding: 0.2em 0.4em; */
+    border-radius: 4px;
+  }
+  
+  .theme-dark pre {
+    padding: 0.8em;
+    overflow-x: auto;
+  }
+  
+  /* Blockquotes */
+  .theme-dark blockquote {
+    position: relative;
+    margin: 1em 0;
+    padding: 1em 1.2em;
+    padding-left: 2em;
+    background-color: #2b2b2b;
+    border-left: 5px solid #4aa3ff;
+    border-radius: 6px;
+    color: #ddd;
+    font-style: italic;
+    font-family: Georgia, serif;
+    line-height: 1.6;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  
+  .theme-dark blockquote::before {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    font-size: 3em;
+    line-height: 1;
+    color: #4aa3ff;
+    font-family: Georgia, serif;
+  }
+  
+  .theme-dark blockquote ol {
+    padding-left: 10px;
+    padding-right: 10px;
+    list-style-position: inside;
+  }
+  
+  /* Tables */
+  .theme-dark table {
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-family: "Georgia", serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #e0e0e0;
+    background-color: #1e1e1e;
+  }
+  
+  .theme-dark th {
+    background-color: #212121;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+  }
+  
+  .theme-dark td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+  }
+  
+  .theme-dark tr:nth-child(even) {
+    background-color: #2a2a2a;
+  }
+  
+  .theme-dark tr:hover {
+    background-color: #333;
+  }
+
+.theme-dark .media-card {
+    display: inline-block;
+    /* border: 2px solid var(--accent); */
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 6px 0;
+    background-color: #f0f8ff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-dark .media-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+
+.theme-dark pre::-webkit-scrollbar,
+.DocumentColumn.theme-dark::-webkit-scrollbar,
+.theme-dark .StaticCommentsSection::-webkit-scrollbar,
+.theme-dark .NoteEditingDiv::-webkit-scrollbar {
+    width: 15px;
+    height: 15px;
+}
+
+.DocumentColumn.theme-dark::-webkit-scrollbar-track,
+.theme-dark pre::-webkit-scrollbar-track,
+.theme-dark .StaticCommentsSection::-webkit-scrollbar-track,
+.theme-dark .NoteEditingDiv::-webkit-scrollbar-track {
+    background: var(--header-footer-bg);
+}
+
+.theme-dark pre::-webkit-scrollbar-thumb,
+.DocumentColumn.theme-dark::-webkit-scrollbar-thumb,
+.theme-dark .StaticCommentsSection::-webkit-scrollbar-thumb,
+.theme-dark .NoteEditingDiv::-webkit-scrollbar-thumb {
+    background: #666;
+    /* thumb color */
+    border: 4px solid transparent;
+    /* creates the gap */
+    background-clip: content-box;
+    /* ensures color doesn't paint over the border */
+    border-radius: 10px;
+    /* still rounded */
+}
+
+.theme-dark pre::-webkit-scrollbar-thumb:hover,
+.DocumentColumn.theme-dark::-webkit-scrollbar-thumb:hover,
+.theme-dark .StaticCommentsSection::-webkit-scrollbar-thumb:hover,
+.theme-dark .NoteEditingDiv::-webkit-scrollbar-corner {
+    background: #888;
+    border: 4px solid transparent;
+    /* creates the gap */
+    background-clip: content-box;
+    border-radius: 10px;
+}
+
+.DocumentColumn.theme-dark::-webkit-scrollbar-corner,
+.theme-dark .StaticCommentsSection::-webkit-scrollbar-corner,
+.theme-dark .NoteEditingDiv::-webkit-scrollbar {
+    background: var(--header-footer-bg);
+}
+
+.theme-dark .comments-title {
+    margin-top: 10px;
+    margin-left: 15px;
+}
+
+.theme-dark .no-comments-text {
+    align-self: center;
+    margin-top: 15px;
+    font-size: 25px;
+}

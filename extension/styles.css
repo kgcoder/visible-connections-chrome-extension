@@ -1,0 +1,167 @@
+@font-face {
+    font-family: MontserratBold;
+    src: url(fonts/Montserrat-Bold.ttf);
+}
+
+html, body{
+    margin: 0;
+    padding: 0;
+}
+
+#popup-header{
+
+    display:flex;
+    height:50px;
+    background-color: darkslateblue;
+    justify-content: center;
+    align-items: center;
+
+
+}
+
+
+
+#popup-title{
+    color:white;
+    font-size: 20px;
+
+}
+
+#mainMenu{
+    padding: 10px;
+}
+
+.vertical-spacer{
+    height: 15px;
+}
+
+.horizontal-spacer-20{
+    width:20px;
+}
+
+.horizontal-spacer-3{
+    width:3px;
+}
+
+#popup-footer{
+    display: none;
+    height: 40px;
+    background-color: #ECEBEB;
+    margin-top: 10px;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+
+}
+
+.PopupItemDiv{
+    width:250px;
+    align-items: center;
+    height: 30px;
+    display: flex;
+}
+
+.MenuTitle{
+    font-weight: bold;
+}
+
+
+
+.LinkRow{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+
+
+.LinkColumn{
+    display: flex;
+    flex:1;
+
+    flex-direction: column;
+    justify-content: center;
+    overflow-x: hidden;
+}
+
+.LinkTitle{
+    font-weight: bold;
+}
+
+.LinkButton{
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    height: 30px;
+}
+
+.LinkButton:hover{
+    cursor: pointer;
+}
+
+.swDownloadButton:hover{
+    cursor: pointer;
+}
+
+
+.LinkDownloadButton {
+    display: flex;
+    /* background-color: #F68705; */
+    width: 30px;
+    color: white;
+    gap: 5px;
+}
+
+.LinkCopyButton{
+    background-color: darkslateblue;
+    width:50px;
+    color: white;
+    
+}
+
+.LinkSendButton{
+    display:flex;
+    background-color: #F68705;
+    width:50px;
+    color: white;
+    gap:5px;
+}
+
+
+
+.RssLinksContainer{
+    display:flex;
+    flex-direction: column;
+    gap:15px;
+}
+
+
+.popup-bottom-link{
+    color:dimgray;
+}
+
+
+#fallback-message{
+    margin-left: 10px;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+
+.urlConfigTitle{
+    margin-top: 20px;
+}
+
+.UrlConfigElement{
+    display: none;
+}
+
+#secondUrlConfigLink{
+    margin-top: 10px;
+}
+
+
+

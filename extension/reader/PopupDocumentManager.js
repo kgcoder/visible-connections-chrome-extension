@@ -1,0 +1,2691 @@
+/*
+Visible Connections Chrome Extension
+Copyright (c) 2025 Karen Grigorian
+Licensed under the MIT License (code)
+
+This extension uses document types defined by the Default Web project.
+All Default Web document types (current and future) are licensed under CC BY-ND 4.0.
+
+For the official list of document types and specifications, see:
+https://github.com/kgcoder/default-web
+*/
+
+import g from './Globals.js'
+import { cleanConnectedDocURL, createOneIconComponent, getDataFromCondocXML, getDesiredConnectionsFromHdocDataJson, getHeaderDivFrom, getPresentationDivFrom, getTextColumnWidth, getTextFromDiv, hideUrlInTheCorner, isDotInsideFrame, isoToHumanReadableDate, removeAllChildren, sanitizeHtml, showToastMessage, showUrlInTheCorner } from './helpers.js'
+import PageInfoManager from './PageInfoManager.js'
+import CollageViewer from './CollageViewer.js'
+import { kColorsForFlinks } from './constants.js'
+import { fetchWebPage } from './NetworkManager.js'
+import ExportPageManager from './ExportPageManager.js'
+import { loadStaticContentFromUrl } from './parsers/ParsingManager.js'
+
+export const kMiddleGap = 100
+export const kLeftDivTop = 60
+export const kRightDocsTabRowHeight = 20
+export const kRightDivTopBarHeight = 20
+
+export const kVerticalPanelInFullscreenWidth = 400
+export const kVerticalPanelWidth = 300
+
+export const kDefaultPadding = '20px'
+export const kBiggerPadding = '20%'
+
+let docWidth
+
+
+window.onresize = () => {
+    g.pdm.updateDocumentWidth()
+    g.pdm.updateConnectedDocumentsVisibility()
+    const collectionDiv = document.getElementById("RightDocumentCollectionContainer")
+    collectionDiv.style.width = `${g.readingManager.docWidth}px`
+    const columns = collectionDiv.querySelectorAll('.DocumentColumn')
+    columns.forEach(columnDiv => {
+        columnDiv.style.width = `${g.readingManager.docWidth}px`
+    })
+    g.readingManager.redrawAllFlinks()
+    g.readingManager.redrawAllTabs()
+    if (g.pdm.isFlinksListOpen) {
+        g.pdm.toggleFlinksList()
+    }
+
+    const canvasTopDiv = document.getElementById('middle-canvas-topDiv')
+    canvasTopDiv.style.left = `${g.readingManager.docWidth}px`
+    
+    if (g.readingManager.mainCollageViewer) {
+        g.readingManager.mainCollageViewer.updateCanvasSize(g.readingManager.docWidth, kLeftDivTop, 0)
+        g.readingManager.mainCollageViewer.changesExist = true
+    }
+    
+    
+    const leftX = g.readingManager.docWidth + kMiddleGap
+    for (const noteData of g.readingManager.rightNotesData) {
+        if (!noteData.collageViewer) continue
+        noteData.collageViewer.updateCanvasSize(g.readingManager.docWidth, kLeftDivTop, leftX)
+        noteData.collageViewer.changesExist = true
+    }
+}
+
+class PopupDocumentManager{
+
+    fontSize = 18.0
+    current3DDoc = null
+    isLeftEditing = false
+    isRightEditing = false
+    //isFullScreen = false
+    rightNotesData = []
+
+    topPanelListeners = []
+
+    sortInRightDoc = false
+
+    infoManager = null
+
+    isShowingLeftDropdownMenu = false
+
+    leftSearchIdlnessTimer = null
+    leftSearchHeighlightObjects = []
+    leftSearchIndex = 0
+
+    rightSearchIdlnessTimer = null
+    rightSearchHeighlightObjects = []
+    rightSearchIndex = 0
+
+    currentDocLeftPanelShowing = false
+    currentDocRightPanelShowing = false
+    currentDocTopPanelShowing = false
+    currentDocBottomPanelShowing = false
+
+    isLeftExporting = false
+
+    isLeftSourceCodeShowing = false
+    isRightSourceCodeShowing = false
+
+    isPaddingOn = true
+
+
+    isShowingInfo = false
+
+    isFlinksListOpen = false
+
+    mainDocTitle = ''
+
+    constructor(){
+
+        
+        
+    }
+    
+    
+    loadUI = () => {     
+        const allDocumentsContainer = document.getElementById("AllDocumentsContainer")
+        allDocumentsContainer.style.width = `${window.innerWidth}px`
+    
+        const iconPaths = g.iconsInfo.iconPaths
+      
+
+        const downloadLink = document.getElementById("MainDocDownloadLink")
+        downloadLink.addEventListener('click', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+
+            this.downloadMainDocInCondoc(g.readingManager.mainDocData.needsMainDocWithUrl)
+            
+        })
+    
+      
+    
+        const closeButton = document.getElementById("CurrentDocumentCloseButton")
+        this.createOneIconComponent(closeButton,iconPaths.ic_close,'Reader-CloseButton')
+        closeButton.addEventListener('click', (e) => {
+            e.stopPropagation()
+            window.postMessage({ type: "RELOAD_PAGE" }, "*");
+        })
+    
+        const leftSandwichButtonDiv = document.getElementById("LeftSandwichButton")
+    
+        leftSandwichButtonDiv.addEventListener('click',this.toggleLeftDropDownMenu)
+    
+
+
+    
+        const infoButton = document.getElementById("CurrentDocumentInfoButton")
+        this.createOneIconComponent(infoButton,iconPaths.ic_info,'Reader-InfoButton')
+        infoButton.addEventListener('click', this.infoButtonPressed)
+        
+        const downloadAllButton = document.getElementById("CurrentDocumentDownloadAllDocsButton")
+        this.createOneIconComponent(downloadAllButton,iconPaths.ic_download_all,'Reader-DownloadAllButton')
+        downloadAllButton.addEventListener('click',g.readingManager.downloadAllPages)
+    
+        const fullScreenButton = document.getElementById("CurrentDocumentFullScreenButton")
+        this.createOneIconComponent(fullScreenButton,iconPaths.ic_fullscreen_close,'Reader-FullscreenButton')
+        fullScreenButton.addEventListener('click', this.fullScreenButtonPressed)
+        fullScreenButton.style.display = 'none'
+    
+        const exportButton = document.getElementById("CurrentDocumentExportButton")
+        this.createOneIconComponent(exportButton,iconPaths.ic_export,'Reader-ExportButton')
+        exportButton.addEventListener('click', this.exportButtonPressed)
+        exportButton.style.display = 'none'
+
+        const sourceCodeButton = document.getElementById("CurrentDocumentSourceCodeButton")
+        this.createOneIconComponent(sourceCodeButton,iconPaths.ic_source_code,'Reader-SourceCodeButton')
+        sourceCodeButton.addEventListener('click', this.sourceCodeButtonPressed)
+        
+        const centerCollageButton = document.getElementById("CurrentDocumentCenterCollageButton")
+        this.createOneIconComponent(centerCollageButton,iconPaths.ic_frame,'Reader-CenterCollageButton')
+        centerCollageButton.addEventListener('click',this.leftDocCenterCollagePressed)
+        centerCollageButton.style.display = 'none'
+
+        const currentDocumentEmbeddingSymbol = document.getElementById("CurrentDocumentEmbeddingSymbol")
+        this.createOneIconComponent(currentDocumentEmbeddingSymbol, iconPaths.ic_exclamation, 'Reader-LeftTitleEmbeddingSymbol')
+        currentDocumentEmbeddingSymbol.style.display = 'none'
+    
+    
+        allDocumentsContainer.addEventListener('mousedown', e => {
+            this.isDragging = false;
+            this.startX = e.pageX;
+            this.startY = e.pageY;
+        });
+
+        allDocumentsContainer.addEventListener('mousemove', e => {
+            const dx = e.pageX - this.startX;
+            const dy = e.pageY - this.startY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) { // threshold in pixels
+                this.isDragging = true;
+            }
+        });
+
+
+        
+
+        allDocumentsContainer.addEventListener('mouseup',(e)=>{
+            if (this.isDragging) return
+            if(this.isLeftSourceCodeShowing || this.isLeftExporting || this.isShowingInfo)return
+
+     
+            const {pageX,pageY} = e
+    
+            const docWidth = g.readingManager.docWidth
+    
+
+            if (this.isFlinksListOpen) {
+                const flinksListDiv = document.getElementById("LinksListContainerDiv")
+                const rect = flinksListDiv.getBoundingClientRect()
+                
+                const { x, y, height, width } = rect
+
+                const frame = {minX:x,minY:y,maxX:x + width,maxY:y + height}
+
+                const isClickInsideFlinksPopup = isDotInsideFrame(pageX, pageY, frame)
+                
+
+
+                const flinksListOpenButton = document.getElementById("LinksOpenButton")
+                const buttonRect = flinksListOpenButton.getBoundingClientRect()
+
+                let isClickInsideButton
+                {
+                    const { x, y, height, width } = buttonRect
+                    isClickInsideButton = isDotInsideFrame(pageX, pageY, {minX:x,minY:y,maxX:x + width,maxY:y + height})
+
+                }
+
+
+
+                if (isClickInsideFlinksPopup || isClickInsideButton) return
+                g.pdm.closeFlinksList()
+            
+            }
+
+    
+            
+            if(g.readingManager.isFullScreen || pageX < docWidth){
+                if( pageY > kLeftDivTop){
+                    
+                    g.readingManager.handleTouchInMainDoc(pageX,pageY)
+                }
+            }else if(pageX > docWidth + kMiddleGap){
+                const rightTop = 50//kRightDocsTabRowHeight + (this.rightNotesData.length > 1 ? kRightDivTopBarHeight : 0)
+                if(pageY > rightTop){
+                    g.readingManager.handleTouchInRightDoc(pageX,pageY)
+                }
+            }else{
+                
+                g.readingManager.handleTouchInMiddleGap(pageX,pageY)
+            }
+            
+    
+        })
+    
+        const flinksOpenButton = document.getElementById("LinksOpenButton")
+        this.createOneIconComponent(flinksOpenButton,iconPaths.ic_flinks_list_button,'Reader-FlinksOpenButton',30,15)
+        flinksOpenButton.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.toggleFlinksList()
+        })
+    
+
+        const showOriginalLinksButton = document.getElementById("LinksListOriginalLinksButton")
+        showOriginalLinksButton.addEventListener('click', (e) => {
+            e.stopPropagation()
+            g.readingManager.revertToOriginalFlinks()
+            this.openFlinksList()
+            g.readingManager.redrawAllFlinks()
+
+            this.updateCurrentDocExportButton()
+        })
+
+        
+        const fixFlinksButton = document.getElementById("LinksListFixButton")
+        fixFlinksButton.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.fixBrokenFlinks()
+            this.openFlinksList()
+            this.updateCurrentDocExportButton()
+        })
+    
+        const flinksCloseButton = document.getElementById("LinksListCloseButton")
+        flinksCloseButton.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.closeFlinksList()
+        })
+    
+    
+        const leftDocumentLeftPanelButton = document.getElementById("CurrentDocumentLeftPanelButton")
+        this.createOneIconComponent(leftDocumentLeftPanelButton,iconPaths.ic_left_panel,'Reader-LeftDocLeftPanelButton')
+        leftDocumentLeftPanelButton.addEventListener('click', this.leftDocumentLeftPanelButtonPressed)
+        leftDocumentLeftPanelButton.style.display = 'none'
+    
+        const leftDocumentRightPanelButton = document.getElementById("CurrentDocumentRightPanelButton")
+        this.createOneIconComponent(leftDocumentRightPanelButton,iconPaths.ic_right_panel,'Reader-LeftDocRightPanelButton')
+        leftDocumentRightPanelButton.addEventListener('click', this.leftDocumentRightPanelButtonPressed)
+        leftDocumentRightPanelButton.style.display = 'none'
+    
+        const rightDocumentSourceCodeButton = document.getElementById("RightDocumentSourceCodeButton")
+        this.createOneIconComponent(rightDocumentSourceCodeButton,iconPaths.ic_source_code,'Reader-RightDocSourceCodeButton')
+        rightDocumentSourceCodeButton.addEventListener('click',this.rightDocumentSourceCodeButtonPressed)
+    
+
+        const rightDocumentCenterCollageButton = document.getElementById("RightDocumentCenterCollageButton")
+        this.createOneIconComponent(rightDocumentCenterCollageButton,iconPaths.ic_frame,'Reader-rightDocumentCenterCollageButton')
+        rightDocumentCenterCollageButton.addEventListener('click', this.rightDocCenterCollagePressed)
+        rightDocumentCenterCollageButton.style.display = 'none'
+    
+        const rightDocumentLeftPanelButton = document.getElementById("RightDocumentLeftPanelButton")
+        this.createOneIconComponent(rightDocumentLeftPanelButton,iconPaths.ic_left_panel,'Reader-RightDocLeftPanelButton')
+        rightDocumentLeftPanelButton.addEventListener('click',this.rightDocumentLeftPanelButtonPressed)
+    
+    
+        const rightDocumentRightPanelButton = document.getElementById("RightDocumentRightPanelButton")
+        this.createOneIconComponent(rightDocumentRightPanelButton,iconPaths.ic_right_panel,'Reader-RightDocRightPanelButton')
+        rightDocumentRightPanelButton.addEventListener('click',this.rightDocumentRightPanelButtonPressed)
+    
+    
+   
+
+  
+    }
+
+
+    updateFontSize = (diff) => {
+        this.fontSize += diff
+   
+        this.applyFontSizeToPresentationDivs()
+
+        g.readingManager.redrawAllFlinks()
+
+        if(diff != 0){
+            showToastMessage(`Font size: ${this.fontSize}${this.fontSize === 18 ? ' (default)' : ''}`)
+        }
+    }
+
+
+    applyFontSizeToPresentationDivs = () => {
+        const mainDiv = document.getElementById('CurrentDocumentMainDiv')
+        mainDiv.style.fontSize = `${this.fontSize}px`
+        const mainDocHeader = document.getElementById('CurrentDocumentHeader')
+        mainDocHeader.style.fontSize = `${this.fontSize}px`
+
+
+        if(!g.readingManager.isFullScreen){
+
+            for (const noteData of g.readingManager.rightNotesData) {
+                if (noteData.scrollDiv) {
+                    const presentationDiv = getPresentationDivFrom(noteData.scrollDiv)
+                    presentationDiv.style.fontSize = `${this.fontSize}px`
+                    const headerDiv = getHeaderDivFrom(noteData.scrollDiv)
+                    headerDiv.style.fontSize = `${this.fontSize}px`
+                }
+            }
+        }
+    }
+
+
+
+
+  
+
+
+
+    showTab = (index) => {
+        g.readingManager.showTab(index)
+
+
+        const fullScreenButton = document.getElementById("CurrentDocumentFullScreenButton")
+        fullScreenButton.style.display = 'flex'
+
+
+        const rightDocumentTitleLink = document.getElementById("RightDocumentTitleLink")
+        const noteData = g.readingManager.rightNotesData[index]
+        rightDocumentTitleLink.href = noteData.url.split('#')[0]
+        rightDocumentTitleLink.title = noteData.url.split('#')[0]
+
+        rightDocumentTitleLink.target = '_blank'
+
+        const rightDocumentCenterCollageButton = document.getElementById("RightDocumentCenterCollageButton")
+        rightDocumentCenterCollageButton.style.display = noteData.docType === 'c' ? 'flex' : 'none'
+
+        
+
+    }
+
+
+      async showEmptyCondoc(dataObject) {
+        
+        this.prepareConnectionsForDocument(dataObject)
+
+        const currentDocumentEmbeddingSymbol = document.getElementById("CurrentDocumentEmbeddingSymbol")
+        currentDocumentEmbeddingSymbol.style.display = 'flex'
+
+
+        const screenWidth = window.innerWidth
+        g.readingManager.docWidth = (screenWidth - kMiddleGap) / 2
+        const {condocTitle, condocDescription, mainPageUrl} = getDataFromCondocXML(dataObject.xmlString)
+        
+        g.readingManager.mainDocData = dataObject
+
+        this.mainDocTitle = condocTitle
+        this.mainDocType = 'condoc'
+        const titleSpan = document.getElementById("CurrentDocumentTitleSpan")
+        titleSpan.innerText = this.mainDocTitle
+
+        const leftTitleLink = document.getElementById("CurrentDocumentTitleLink")
+        leftTitleLink.href = mainPageUrl.split('#')[0]
+        leftTitleLink.title = mainPageUrl.split('#')[0]
+        leftTitleLink.target = '_blank'
+        leftTitleLink.classList.add('onHoverUnderlineDecoration')
+        leftTitleLink.style.cursor = 'pointer'
+
+
+
+
+        const mainDiv = document.getElementById("AllDocumentsContainer")
+
+        mainDiv.style.display = 'flex'
+
+        this.updateDocumentWidth()
+          
+
+        const {count,total } = this.configureConnectionsCountOnInfoButton()
+
+        const downloadAllButton = document.getElementById("CurrentDocumentDownloadAllDocsButton")
+
+        downloadAllButton.style.display = count < total ? 'flex' : 'none'
+
+
+        this.downloadMainDocInCondoc(mainPageUrl)
+       
+
+    }
+
+
+    async downloadMainDocInCondoc(mainPageUrl, successCallback) {
+         g.pdm.showMainDocSpinner()
+        const embeddedDataObject = await loadStaticContentFromUrl(mainPageUrl)
+        g.pdm.hideMainDocSpinner()
+        
+
+        if (embeddedDataObject) {
+            if (![1,2,3,5].includes(embeddedDataObject.docSubtype)) {
+                showToastMessage('Wrong format of the embedded document')
+                return
+            }
+            if (embeddedDataObject.docType === 'h') {
+                this.loadDocument(embeddedDataObject, true)
+            } else if (embeddedDataObject.docType === 'c') {
+                this.loadCollage(embeddedDataObject, true)
+            } 
+
+            if(successCallback)successCallback()
+        } else {
+        
+            const downloadLink = document.getElementById("MainDocDownloadLink")
+            downloadLink.href = mainPageUrl
+            downloadLink.style.display = 'flex'
+            
+        }
+    }
+
+
+
+    async loadCollage(dataObject, isEmbedded = false){
+
+        if (!isEmbedded) {
+            const leftTitleLink = document.getElementById("CurrentDocumentTitleLink")
+            leftTitleLink.removeAttribute("href"); 
+        }
+    
+        this.hidePanelsOfCurrentDocument()
+      
+
+        const screenWidth = window.innerWidth
+
+        g.readingManager.docWidth = screenWidth
+      
+       
+   
+        if (!isEmbedded) {
+            this.prepareConnectionsForDocument(dataObject)       
+        }
+
+
+       
+        
+        const mainDiv = document.getElementById("AllDocumentsContainer")
+        const mainPresentationDiv = document.getElementById("CurrentDocumentMainDiv")
+        mainPresentationDiv.style.display = 'none'
+        const mainCollageDiv = document.getElementById("CurrentDocumentMainCollageDiv")
+        mainDiv.style.display = 'flex'
+        mainCollageDiv.style.display = 'flex'
+        
+      
+        const canvas = document.getElementById("CurrentDocumentMainCollageCanvas")
+
+        //const titleSpan = document.getElementById("CurrentDocumentTitleSpan")
+
+        
+        g.readingManager.mainCollageViewer = new CollageViewer(dataObject.xmlString,dataObject.url,-1,'main',canvas,0,kLeftDivTop,window.innerWidth, this.collageLoadedCallback)
+
+        this.updateDocumentWidth()
+
+
+        const leftDocumentLeftPanelButton = document.getElementById("CurrentDocumentLeftPanelButton")
+        leftDocumentLeftPanelButton.style.display = 'none'
+        const rightDocumentLeftPanelButton = document.getElementById("CurrentDocumentRightPanelButton")
+        rightDocumentLeftPanelButton.style.display = 'none'
+
+
+        
+
+        const headerDiv = document.getElementById("CurrentDocumentHeader")
+        removeAllChildren(headerDiv)
+
+
+        
+
+        if (isEmbedded) {
+             g.readingManager.embeddedDocData = dataObject 
+        } else {
+            g.readingManager.mainDocData = dataObject  
+        }
+
+
+        g.readingManager.mainDocType = 'c'
+
+        
+        g.readingManager.isReading = true
+
+
+
+        // g.readingManager.frame()
+
+        
+
+    }
+
+    collageLoadedCallback = async () => {
+
+        if (!g.readingManager.mainCollageViewer?.content) return
+        
+
+
+        const currentDocumentSourceCodeButton = document.getElementById("CurrentDocumentSourceCodeButton")
+        currentDocumentSourceCodeButton.style.display = 'flex'
+
+
+        const {count,total } = this.configureConnectionsCountOnInfoButton()
+
+        const downloadAllButton = document.getElementById("CurrentDocumentDownloadAllDocsButton")
+
+        downloadAllButton.style.display = count < total ? 'flex' : 'none'
+      
+
+        setTimeout(() => {
+            g.readingManager.drawFlinksOnTheLeftOnly()  
+        
+            if (!g.readingManager.isFullScreen) {
+                g.readingManager.redrawAllFlinks() 
+            }
+        },10)
+
+
+        this.showMiddleCanvas()
+        
+        g.readingManager.addListenerToLeftDoc()
+
+        g.readingManager.frame()
+
+        const centerCollageButton = document.getElementById("CurrentDocumentCenterCollageButton")
+        centerCollageButton.style.display = 'flex'
+
+
+
+    }
+
+  
+
+    async loadDocument(dataObject, isEmbedded = false){
+
+        if (!isEmbedded) {
+            const leftTitleLink = document.getElementById("CurrentDocumentTitleLink")
+            leftTitleLink.removeAttribute("href"); 
+        }
+
+   
+        if (isEmbedded) {
+             g.readingManager.embeddedDocData = dataObject 
+        } else {
+            g.readingManager.mainDocData = dataObject  
+        }
+        
+        g.readingManager.mainDocType = 'h'
+
+
+        this.updateDocumentWidth()
+        
+
+        const div = document.getElementById("CurrentDocument")
+
+     
+        
+
+        const result = g.noteDivsManager.populateDivWithTextFromDoc(div,dataObject.xmlString,dataObject.url)
+        if (!result) {
+            
+            showToastMessage('Something is wrong with this page')
+            return 
+        }
+        const {panels,title} = result
+        
+      
+        if (!isEmbedded) {
+            this.prepareConnectionsForDocument(dataObject)       
+        }
+
+    
+        this.mainDocTitle = title
+
+        
+        const {count,total } = this.configureConnectionsCountOnInfoButton()
+
+        const downloadAllButton = document.getElementById("CurrentDocumentDownloadAllDocsButton")
+
+        downloadAllButton.style.display = count < total ? 'flex' : 'none'
+        
+
+  
+
+
+        const titleSpan = document.getElementById("CurrentDocumentTitleSpan")
+        titleSpan.innerHTML = this.mainDocTitle
+
+
+
+
+        //======panels
+        if (!panels) {
+            this.hidePanelsOfCurrentDocument()
+        } else {
+            
+            const documentLeftPanelButton = document.getElementById("CurrentDocumentLeftPanelButton")
+            const documentRightPanelButton = document.getElementById("CurrentDocumentRightPanelButton")
+            const topPanelDiv = document.getElementById("CurrentDocumentTopPanel")
+            const bottomPanelDiv = document.getElementById("CurrentDocumentBottomPanel")
+            const leftPanelDiv = document.getElementById("CurrentDocumentLeftPanel")
+            const rightPanelDiv = document.getElementById("CurrentDocumentRightPanel")
+            const topPanelLogoLink = document.getElementById("CurrentDocumentTopPanelLogoLink")
+            const topPanelLogoImage = document.getElementById("CurrentDocumentTopPanelLogo")
+            const topPanelTitleSpan = document.getElementById("CurrentDocumentTopPanelTitle")
+            const bottomPanelRowDiv = document.getElementById("CurrentDocumentBottomPanelRow")
+            const topPanelOptionsRow = document.getElementById("CurrentDocumentTopPanelOptionsRow")
+            const bottomMessageDiv = document.getElementById("CurrentDocumentBottomPanelBottomMessage")
+            const dropdownMenuDiv = document.getElementById("CurrentDocumentDropDownMenu") 
+            const sandwichButtonDiv = document.getElementById("LeftSandwichButton")
+
+
+      
+            const allDivs = {
+                documentLeftPanelButton,documentRightPanelButton,
+                topPanelDiv,topPanelLogoLink,topPanelLogoImage,topPanelTitleSpan,
+                bottomPanelDiv,bottomPanelRowDiv,topPanelOptionsRow,leftPanelDiv,rightPanelDiv,bottomMessageDiv,
+                dropdownMenuDiv,sandwichButtonDiv
+                
+            }
+
+            g.readingManager.mainDocPanels = panels
+            this.populatePanels(panels,allDivs,this,false)
+
+        }    
+
+
+        
+        const mainDiv = document.getElementById("AllDocumentsContainer")
+        const mainPresentationDiv = document.getElementById("CurrentDocumentMainDiv")
+        
+        const mainCollageDiv = document.getElementById("CurrentDocumentMainCollageDiv")
+        mainDiv.style.display = 'flex'
+        mainCollageDiv.style.display = 'none'
+        mainPresentationDiv.style.display = 'block'
+
+        this.updateDocumentWidth()
+
+        this.applyFontSizeToPresentationDivs()
+
+
+        g.readingManager.isReading = true
+
+
+        setTimeout(() => {
+            g.readingManager.drawFlinksOnTheLeftOnly()  
+         
+            if (!g.readingManager.isFullScreen) {
+                g.readingManager.redrawAllFlinks() 
+            }
+
+        },10)
+    
+
+
+       
+        
+        g.readingManager.addListenerToLeftDoc()
+
+        g.readingManager.frame()
+
+
+    }
+
+
+    
+    prepareConnectionsForDocument(dataObject) {
+        g.readingManager.connections = dataObject.connectedDocsData
+
+        let j = 0
+        for (let i = 0; i < g.readingManager.connections.length; i++){
+            const connection = g.readingManager.connections[i]
+            connection.color = kColorsForFlinks[j]
+            j++
+            if(j >= kColorsForFlinks.length)j = 0
+        }
+
+    }
+
+
+ 
+    configureConnectionsCountOnInfoButton() {
+
+        const connections = g.readingManager.connections
+
+        let count = 0
+
+        const finalUrls = new Set()
+        for (const flinksData of connections) {
+            finalUrls.add(flinksData.url)
+            const noteData = g.readingManager.getNoteDataByUrl(flinksData.url)
+            if (noteData) {
+                count++
+            }
+        }
+
+        const total = finalUrls.size
+
+
+
+
+        const countDiv = document.getElementById("CurrentDocumentInfoButtonCountDiv")
+        if (total) {
+  
+
+            countDiv.classList.remove('CurrentDocumentInfoButtonCountDivComplete')
+            countDiv.classList.remove('CurrentDocumentInfoButtonCountDivIncomplete')
+            countDiv.classList.remove('CurrentDocumentInfoButtonCountDivSelected')
+            if (this.isShowingInfo) {
+                countDiv.classList.add('CurrentDocumentInfoButtonCountDivSelected')   
+            } else {
+                countDiv.classList.add(count === total ? 'CurrentDocumentInfoButtonCountDivComplete' : 'CurrentDocumentInfoButtonCountDivIncomplete')   
+            }
+            countDiv.textContent = `${count}/${total}`
+        } else {
+            countDiv.textContent = ''
+        }
+
+        countDiv.style.display = total > 0 ? 'flex' : 'none'
+
+        return {count,total}
+    }
+
+
+    populatePanelsOfOneRightDoc(){
+        
+        if(!g.readingManager.rightNotesData.length)return
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        if(noteData.docType !== 'h' || !noteData.panels){
+            const rightDocumentLeftPanelButton = document.getElementById("RightDocumentLeftPanelButton")
+            const rightDocumentRightPanelButton = document.getElementById("RightDocumentRightPanelButton")
+
+            rightDocumentLeftPanelButton.style.display = 'none'
+            rightDocumentRightPanelButton.style.display = 'none'
+            return
+        }
+
+        
+        
+
+        const docId = noteData.docId
+        const leftPanelDiv = document.getElementById('DocumentLeftPanel' + docId)
+        const rightPanelDiv = document.getElementById('DocumentRightPanel' + docId)
+        const topPanelDiv = document.getElementById('DocumentTopPanel' + docId)
+        
+
+        const topPanelLogoLink = document.getElementById("DocumentTopPanelLogoLink" + docId)
+        const topPanelLogoImage = document.getElementById("DocumentTopPanelLogo" + docId)
+        const topPanelTitleSpan = document.getElementById("DocumentTopPanelTitle" + docId)
+        const topPanelOptionsRow = document.getElementById("DocumentTopPanelOptionsRow" + docId)
+
+        const bottomPanelDiv = document.getElementById('DocumentBottomPanel' + docId)
+        const bottomPanelRowDiv = document.getElementById('DocumentBottomPanelRow' + docId)
+
+
+        const bottomMessageDiv = document.getElementById("DocumentBottomPanelBottomMessage" + docId)
+        
+        const documentLeftPanelButton = document.getElementById("RightDocumentLeftPanelButton")
+        const documentRightPanelButton = document.getElementById("RightDocumentRightPanelButton")
+
+
+
+        const sandwichButtonDiv = document.getElementById("SandwichButton" + docId)
+        const dropdownMenuDiv = document.getElementById("DocumentDropDownMenu" + docId)
+
+        const allDivs = {
+            documentLeftPanelButton,documentRightPanelButton,
+            topPanelDiv,topPanelLogoLink,topPanelLogoImage,topPanelTitleSpan,
+            bottomPanelDiv,bottomPanelRowDiv,topPanelOptionsRow,leftPanelDiv,rightPanelDiv,bottomMessageDiv,
+            sandwichButtonDiv,dropdownMenuDiv
+        }
+
+        this.populatePanels(noteData.panels,allDivs,noteData,true)
+    }
+
+
+    populatePanels(panelsInfo,allDivs,dataObject,isRight = false){
+
+        const {
+            documentLeftPanelButton,documentRightPanelButton,
+            topPanelDiv,topPanelLogoLink,topPanelLogoImage,topPanelTitleSpan,
+            bottomPanelDiv,bottomPanelRowDiv,topPanelOptionsRow,leftPanelDiv,rightPanelDiv,bottomMessageDiv,
+            sandwichButtonDiv,dropdownMenuDiv
+        } = allDivs
+
+    
+
+      
+
+
+        while(topPanelOptionsRow.firstChild){
+            topPanelOptionsRow.removeChild(topPanelOptionsRow.firstChild)
+        }
+
+      
+
+        while(leftPanelDiv.firstChild){
+            leftPanelDiv.removeChild(leftPanelDiv.firstChild)
+        }
+
+        while(rightPanelDiv.firstChild){
+            rightPanelDiv.removeChild(rightPanelDiv.firstChild)
+        }
+
+
+
+        while(bottomPanelRowDiv.firstChild){
+            bottomPanelRowDiv.removeChild(bottomPanelRowDiv.firstChild)
+        }
+
+        
+
+        const {topPanel,bottomPanel,sidePanel,style} = panelsInfo
+
+        let isLeftPanelButtonVisible = false
+        let isRightPanelButtonVisible = false
+
+
+       
+
+        if(sidePanel && (sidePanel.url || sidePanel.commentsUrl)){
+
+
+            const isLeft = sidePanel.side === 'left'
+
+            isLeftPanelButtonVisible = isLeft
+            isRightPanelButtonVisible = !isLeft
+
+
+           
+
+            if(isLeft){
+
+                let id = isRight ? 'rightDocLeftPanel' : 'leftDocLeftPanel'
+                
+                if(isRight){
+                    id += dataObject.index
+                }
+
+                if(sidePanel.commentsUrl){
+
+                    id += 'Comments'
+                    this.addCommentsSectionToSidePanel(leftPanelDiv, id)
+                }else{
+                    this.addIframeToSidePanel(leftPanelDiv,id)
+
+                }
+
+            }else{
+                let id = isRight ? 'rightDocRightPanel' : 'leftDocRightPanel'
+
+                if(isRight){
+                    id += dataObject.index
+                }
+
+                if(sidePanel.commentsUrl){
+                    id += 'Comments'
+                    this.addCommentsSectionToSidePanel(rightPanelDiv, id)
+                }else{
+                    this.addIframeToSidePanel(rightPanelDiv,id)
+
+                }
+
+            }
+        }
+
+        documentLeftPanelButton.style.display = isLeftPanelButtonVisible ? 'flex' : 'none'
+        documentRightPanelButton.style.display = isRightPanelButtonVisible ? 'flex' : 'none'
+
+
+        let topTextColor = 'black'
+        let topBackgroundColor = 'white'
+        let bottomTextColor = 'black'
+        let bottomBackgroundColor = 'white'
+    
+
+        if(style){
+            const {textColor,backgroundColor} = style
+            if(textColor){
+                topTextColor = textColor
+                bottomTextColor = textColor
+            }
+            if(backgroundColor){
+                topBackgroundColor = backgroundColor
+                bottomBackgroundColor = backgroundColor
+            }
+           
+        }
+
+       
+
+        if(topPanel && (topPanel.logo || topPanel.title || (topPanel.links && topPanel.links.length))){
+            
+            dataObject.currentDocTopPanelShowing = true
+
+            if(topPanel.style){
+                if(style){
+                    const {textColor,backgroundColor} = topPanel.style
+                    if(textColor){
+                        topTextColor = textColor
+                    }
+                    if(backgroundColor){
+                        topBackgroundColor = backgroundColor
+                    }
+                }
+            }
+
+            topPanelLogoImage.style.display = 'none'
+            topPanelTitleSpan.style.display = 'none'
+            if(topPanel.logo || topPanel.title){
+                let {isMainLinkStatic,logo:imageUrl,mainUrl:link,title} = topPanel
+                if(imageUrl){
+                    topPanelLogoImage.src = imageUrl
+                    topPanelLogoImage.width = '150px'
+                    topPanelLogoImage.height = '50px'
+                    topPanelLogoImage.style.width = '150px'
+                    topPanelLogoImage.style.height = '50px'
+                    topPanelLogoImage.style.display = 'flex'
+                    topPanelTitleSpan.style.display = 'none'
+                }else if(title){
+                    topPanelTitleSpan.textContent = title
+                    topPanelLogoImage.style.display = 'none'
+                    topPanelTitleSpan.style.display = 'flex'
+                   //topPanelTitleSpan.style.color = topTextColor
+                }else{
+                    topPanelLogoImage.style.display = 'none'
+                    topPanelTitleSpan.style.display = 'none'
+                }
+
+                if(!dataObject.topPanelListeners){
+                    dataObject.topPanelListeners = []
+                }
+
+                for(const item of dataObject.topPanelListeners){
+                    const {type,handler} = item
+                    topPanelLogoLink.removeEventListener(type,handler)
+                }
+
+                dataObject.topPanelListeners = []
+
+                if(link){
+
+                    const clickHandler = () => {
+                        g.wn.openUrl(link, isMainLinkStatic)
+                    }
+                    topPanelLogoLink.href = link
+
+                   // topPanelLogoLink.addEventListener('click',clickHandler)
+                   // dataObject.topPanelListeners.push({type:'click',handler:clickHandler})
+    
+                    // const mouseOverHandler = () => {
+                    //  //   showUrlInTheCorner(link)
+                    // }
+                  //  topPanelLogoLink.addEventListener('mouseover',mouseOverHandler)
+                 //   dataObject.topPanelListeners.push({type:'mouseover',handler:mouseOverHandler})
+
+
+
+                    // const mouseOutHandler = () => {
+                    //  //   hideUrlInTheCorner()
+                    // }
+
+                   // topPanelLogoLink.addEventListener('mouseout',mouseOutHandler)
+                   // dataObject.topPanelListeners.push({type:'mouseout',handler:mouseOutHandler})
+
+
+                  
+
+                }
+                topPanelLogoLink.style.cursor = !!link ? 'pointer' : 'default'
+
+
+            }
+
+    
+
+         dataObject.docTopPanelTextColor = topTextColor
+         dataObject.docTopPanelBackgroundColor = topBackgroundColor
+         dataObject.docTopPanelLinks = topPanel.links
+
+
+            
+        }
+
+
+
+
+        if(bottomPanel){
+
+            if(bottomPanel.style){
+                if(style){
+                    const {textColor,backgroundColor} = bottomPanel.style
+                    if(textColor){
+                        bottomTextColor = textColor
+                    }
+                    if(backgroundColor){
+                        bottomBackgroundColor = backgroundColor
+                    }
+                }
+            }
+
+            if(bottomPanel.sections && bottomPanel.sections.length){
+                dataObject.currentDocBottomPanelShowing = true
+
+                for(const section of bottomPanel.sections){
+                    const sectionDiv = document.createElement('div')
+                    sectionDiv.className = "FooterSection"
+    
+                    if(!section.title && (!section.links || !section.links.length))continue
+    
+                    if(section.title){
+                        const h2 = document.createElement('h2')
+                        h2.className = "FooterSectionTitle"
+                        h2.textContent = section.title
+                        //h2.style.color = bottomTextColor
+                        sectionDiv.appendChild(h2)
+    
+                    }
+    
+                    let isFirst = true
+                    for(const link of section.links){
+                        const linkNode = document.createElement('a')
+                        linkNode.className = "FooterOptionLink"
+                        linkNode.href = link.url
+                        linkNode.textContent = link.text
+                        //linkNode.style.color = bottomTextColor
+                        if(isFirst){
+                            if(!section.title){
+                                linkNode.style.marginTop = '20px'
+                            }
+                            isFirst = false
+                        }
+
+                        sectionDiv.appendChild(linkNode)
+
+                        // linkNode.addEventListener('click', function () {
+                        //     g.wn.openUrl(link.url, link.isStaticLink)
+                        // })
+    
+                        // linkNode.addEventListener('mouseover',function(){
+                        //    // showUrlInTheCorner(link.url)
+                        // })
+
+                        // linkNode.addEventListener('mouseout',function(){
+                        //   //  hideUrlInTheCorner()
+                        // })
+                    }
+    
+                    
+    
+                    bottomPanelRowDiv.appendChild(sectionDiv)
+                }
+
+            }
+
+            if(bottomPanel.bottomMessage){
+                dataObject.currentDocBottomPanelShowing = true
+                bottomMessageDiv.textContent = bottomPanel.bottomMessage
+             //   bottomMessageDiv.style.color = bottomTextColor
+
+            }
+
+            bottomMessageDiv.style.display = bottomPanel.bottomMessage ? 'flex' : 'none'
+
+
+          
+        }
+
+
+
+
+      //  topPanelDiv.style.backgroundColor = topBackgroundColor
+      //  bottomPanelDiv.style.backgroundColor = bottomBackgroundColor
+
+        topPanelDiv.style.display = dataObject.currentDocTopPanelShowing ? 'flex' : 'none'
+        bottomPanelDiv.style.display = dataObject.currentDocBottomPanelShowing ? 'flex' : 'none'
+        
+
+        if(topPanel && topPanel.links && topPanel.links.length){
+   
+            const allDivs = {topPanelDiv,topPanelLogoLink,topPanelOptionsRow,dropdownMenuDiv,sandwichButtonDiv}
+
+
+
+            
+            
+            
+            
+            this.addLinksToTopPanel(topPanel.links,topTextColor,allDivs,dataObject,isRight)
+        }
+
+    }
+
+
+
+
+
+    addLinksToTopPanel(linksData,topTextColor,allDivs,dataObject,isRight){
+        const {topPanelDiv,topPanelLogoLink,topPanelOptionsRow,dropdownMenuDiv} = allDivs
+        let sandwichButtonDiv = allDivs.sandwichButtonDiv
+
+        
+        
+        
+
+            let availableWidth = topPanelDiv.offsetWidth - topPanelLogoLink.offsetWidth - 200
+            let usedWidth = 0
+            
+
+            while(topPanelOptionsRow.firstChild){
+                topPanelOptionsRow.removeChild(topPanelOptionsRow.firstChild)
+            }
+
+
+            let showSandwich = false
+
+
+            while(dropdownMenuDiv.firstChild){
+                dropdownMenuDiv.removeChild(dropdownMenuDiv.firstChild)
+            }
+
+
+
+            for(let link of linksData){
+                let linkNode = document.createElement('a')
+                linkNode.className = 'TopPanelOptionLink'
+                linkNode.href = link.url
+                linkNode.textContent = link.text
+                //linkNode.style.color = topTextColor
+
+                topPanelOptionsRow.appendChild(linkNode)
+
+                const linkWidth = linkNode.offsetWidth + 20
+                
+                if (usedWidth + linkWidth <= availableWidth) {
+                  usedWidth += linkWidth;
+                  
+                } else {
+                    showSandwich = true
+                  linkNode.style.display = "none"; // Hide link
+                  const clone = linkNode.cloneNode(true);
+                  clone.style.display = 'flex'
+                  clone.style.marginLeft = 0
+                  clone.style.marginBottom = '5px'
+                  linkNode = clone
+                  dropdownMenuDiv.appendChild(clone); 
+                }
+
+
+                // linkNode.addEventListener('click', function () {
+                //     g.wn.openUrl(link.url, link.isStaticLink)
+                // })
+
+                // linkNode.addEventListener('mouseover',function(){
+                //    // showUrlInTheCorner(link.url)
+                // })
+
+                // linkNode.addEventListener('mouseout',function(){
+                //    // hideUrlInTheCorner()
+                // })
+
+
+            }
+
+
+          //    if(showSandwich){
+                
+
+            //    const color =  dataObject.docTopPanelTextColor
+
+               // const lineDivs = document.getElementsByClassName(isRight ? 'RightSandwichLine' : 'LeftSandwichLine')
+
+                // for (let i = 0; i < lineDivs.length; i++) {
+                //     lineDivs[i].style.backgroundColor = color
+                // }
+
+               // dropdownMenuDiv.style.backgroundColor = dataObject.docTopPanelBackgroundColor
+          //  }
+
+            sandwichButtonDiv.style.display = showSandwich ? 'flex' : 'none'
+        
+
+    }
+
+
+
+
+
+    fullScreenButtonPressed = (e) => {
+
+        e.stopPropagation()
+
+        this.toggleFullScreen()
+
+
+      
+       
+    }
+
+    exportButtonPressed = (e) => {
+        e.stopPropagation()
+        this.toggleExport()
+        this.updateConnectedDocumentsVisibility()
+       
+    }
+
+    sourceCodeButtonPressed = (e) => {
+        e.stopPropagation()
+        this.toggleSourceCode()
+        this.updateConnectedDocumentsVisibility()
+       
+    }
+
+    rightDocumentSourceCodeButtonPressed = (e) => {
+        e.stopPropagation()
+        this.toggleRightDocSourceCode()
+    }
+
+
+    leftDocCenterCollagePressed = (e) => {
+        e.stopPropagation()
+
+        if (g.readingManager.mainCollageViewer) {
+            g.readingManager.mainCollageViewer.centerCollage()
+        }
+    }
+
+    rightDocCenterCollagePressed = (e) => {
+        e.stopPropagation()
+
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        if (noteData.collageViewer) {
+            noteData.collageViewer.centerCollage()
+        }
+        
+    }
+
+    closeAllExcept(except) {
+        
+        if(this.isShowingInfo && except !== this.toggleInfo){
+            this.toggleInfo(true)
+        }
+        if(this.isLeftSourceCodeShowing && except !== this.toggleSourceCode){
+            this.toggleSourceCode(true)
+        }
+
+        if (this.isShowingLeftDropdownMenu && except !== this.toggleLeftDropDownMenu) {
+            this.toggleLeftDropDownMenu()
+        }
+
+     
+        if (except !== this.toggleRightDropDownMenu && g.readingManager.rightNotesData.length) {
+            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+            if (noteData.isShowingDropdownMenu) {
+                this.toggleRightDropDownMenu()
+            }
+            
+        }
+
+        if(this.isLeftExporting && except !== this.toggleExport){
+            this.toggleExport(true)
+        }
+
+        if (this.isFlinksListOpen && except !== this.toggleFlinksList) {
+            this.toggleFlinksList(true)
+         }
+
+    }
+
+
+    toggleExport = (dontCloseOthers = false) => {
+
+        if(!dontCloseOthers)this.closeAllExcept(this.toggleExport)
+        
+
+        this.isLeftExporting = !this.isLeftExporting
+
+        const buttonDiv = document.getElementById("CurrentDocumentExportButton")
+        removeAllChildren(buttonDiv)
+        const iconPaths = g.iconsInfo.iconPaths
+
+        const iconPath = this.isLeftExporting ? iconPaths.ic_export_white : iconPaths.ic_export
+        this.createOneIconComponent(buttonDiv,iconPath,'CurrentDocumentExportButton',24)
+
+        buttonDiv.style.backgroundColor = this.isLeftExporting ? 'rgb(72, 77, 233)' : 'transparent'
+
+
+        const exportDivConatiner = document.getElementById("CurrentDocumentExportContainer")
+        exportDivConatiner.style.display = this.isLeftExporting ? 'flex' : 'none'
+
+        if(this.isLeftExporting){
+
+            if(g.readingManager.mainDocType === 'h'){
+            //export doc
+                const exportManager = new ExportPageManager()
+                exportManager.renderData()
+                return
+            }else if (g.readingManager.mainDocType === 'c'){
+                //export collage
+                const exportManager = new ExportPageManager()
+                exportManager.renderData()
+            }
+            
+        }else{
+            return
+        }
+
+    }
+
+
+    toggleSourceCode = (dontCloseOthers = false) => {
+
+        if(!dontCloseOthers)this.closeAllExcept(this.toggleSourceCode)
+        
+
+        this.isLeftSourceCodeShowing = !this.isLeftSourceCodeShowing
+
+        const buttonDiv = document.getElementById("CurrentDocumentSourceCodeButton")
+        removeAllChildren(buttonDiv)
+        const iconPaths = g.iconsInfo.iconPaths
+
+        const iconPath = this.isLeftSourceCodeShowing ? iconPaths.ic_source_code_white : iconPaths.ic_source_code
+        this.createOneIconComponent(buttonDiv,iconPath,'CurrentDocumentSourceCodeButton',24)
+
+        buttonDiv.style.backgroundColor = this.isLeftSourceCodeShowing ? 'rgb(72, 77, 233)' : 'transparent'
+
+
+        const exportDivConatiner = document.getElementById("CurrentDocumentExportContainer")
+        exportDivConatiner.style.display = this.isLeftSourceCodeShowing ? 'flex' : 'none'
+
+        if(this.isLeftSourceCodeShowing){
+
+            const exportManager = new ExportPageManager()
+            exportManager.renderSourceCode(exportDivConatiner, g.readingManager.mainDocData)
+                
+      
+        }
+
+        g.readingManager.redrawAllFlinks()
+   
+    }
+
+
+    toggleRightDocSourceCode = () => {
+        this.isRightSourceCodeShowing = !this.isRightSourceCodeShowing
+
+        const buttonDiv = document.getElementById("RightDocumentSourceCodeButton")
+        removeAllChildren(buttonDiv)
+        const iconPaths = g.iconsInfo.iconPaths
+
+        const iconPath = this.isRightSourceCodeShowing ? iconPaths.ic_source_code_white : iconPaths.ic_source_code
+        this.createOneIconComponent(buttonDiv,iconPath,'RightDocumentSourceCodeButton',24)
+
+        buttonDiv.style.backgroundColor = this.isRightSourceCodeShowing ? 'rgb(72, 77, 233)' : 'transparent'
+
+
+        const exportDivConatiner = document.getElementById("RightDocumentExportContainer")
+        exportDivConatiner.style.display = this.isRightSourceCodeShowing ? 'flex' : 'none'
+
+        if(this.isRightSourceCodeShowing){
+
+            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+            const exportManager = new ExportPageManager()
+            exportManager.renderSourceCode(exportDivConatiner, noteData, true)
+
+            
+        }
+        g.readingManager.redrawAllFlinks()
+    }
+
+
+
+    toggleFullScreen(dontRedrawFlinks = false){
+        g.readingManager.isFullScreen = !g.readingManager.isFullScreen
+
+        
+        this.updateDocumentWidth()
+  
+
+        this.updateConnectedDocumentsVisibility()
+
+
+        this.centerAllCollages()
+
+     
+        if(this.isShowingLeftDropdownMenu){
+            this.toggleLeftDropDownMenu()
+        }
+
+        if (this.isFlinksListOpen) {
+            this.closeFlinksList()
+        }
+
+        if (!dontRedrawFlinks) {
+            g.readingManager.redrawAllFlinks() 
+        }
+     
+
+    }
+
+
+    centerAllCollages() {
+           if (g.readingManager.mainCollageViewer) {
+            g.readingManager.mainCollageViewer.centerCollage()
+        }
+
+        for (const noteData of g.readingManager.rightNotesData) {
+            if (noteData.collageViewer) {
+                noteData.collageViewer.centerCollage()
+            }
+        }
+    }
+
+    updateDocumentWidth() {
+        const screenWidth = window.innerWidth
+        g.readingManager.docWidth = (screenWidth - kMiddleGap) / 2
+        const oneDocumentContainer = document.getElementById("OneDocumentContainer")
+        const currentDocumentDiv = document.getElementById("CurrentDocument")
+        const currentDocumentWidth = g.readingManager.isFullScreen ? window.innerWidth : g.readingManager.docWidth
+        oneDocumentContainer.style.width = `${currentDocumentWidth}px`
+
+        oneDocumentContainer.style.borderRightStyle = g.readingManager.isFullScreen ? 'none' : 'solid'
+    
+
+        currentDocumentDiv.style.width = `${currentDocumentWidth}px`
+
+        if(g.readingManager.mainCollageViewer){
+            g.readingManager.mainCollageViewer.updateWidth(currentDocumentWidth)
+        }
+
+        const mainPresentationDiv = document.getElementById("CurrentDocumentMainDiv")
+
+
+        const mainPadding = this.isPaddingOn && g.readingManager.isFullScreen ? kBiggerPadding : kDefaultPadding
+       
+        mainPresentationDiv.style.paddingLeft = mainPadding
+        mainPresentationDiv.style.paddingRight = mainPadding
+
+        const headerDiv = document.getElementById("CurrentDocumentHeader")
+        headerDiv.style.paddingLeft = mainPadding
+        headerDiv.style.paddingRight = mainPadding
+
+    
+
+        const currentDocumentTopBar = document.getElementById("CurrentDocumentTopBar")
+        currentDocumentTopBar.style.height = kLeftDivTop + 'px'
+        currentDocumentTopBar.style.paddingLeft = mainPadding
+
+        const fullScreenButton = document.getElementById("CurrentDocumentFullScreenButton")
+        while(fullScreenButton.firstChild){
+            fullScreenButton.removeChild(fullScreenButton.firstChild)
+        }
+
+        const iconPaths = g.iconsInfo.iconPaths
+
+        const newIcon = g.readingManager.isFullScreen ? iconPaths.ic_fullscreen_close : iconPaths.ic_fullscreen_open
+        this.createOneIconComponent(fullScreenButton,newIcon,'Reader-FullscreenButton')
+
+
+        this.updateLeftDocumentPanels()
+
+        if (g.readingManager.mainDocType === 'h') {
+            this.updateDocumentImageWidths(mainPresentationDiv)   
+        }
+
+        if (g.readingManager.rightNotesData.length) {
+            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+            if (noteData.docType === 'h') {
+                const div = noteData.scrollDiv
+                const presentationDiv = getPresentationDivFrom(div)
+                this.updateDocumentImageWidths(presentationDiv)   
+
+            }
+            
+        }
+
+
+
+    }
+
+    infoButtonPressed = (e) => {
+        e.stopPropagation()
+        this.toggleInfo()
+        this.updateConnectedDocumentsVisibility()
+    }
+
+    toggleInfo = (dontCloseOthers = false) => {
+        const iconPaths = g.iconsInfo.iconPaths
+        
+        if(!dontCloseOthers)this.closeAllExcept(this.toggleInfo)
+  
+
+        this.isShowingInfo = !this.isShowingInfo
+     
+        const buttonDivWrapper = document.getElementById("CurrentDocumentInfoButtonWrapper")
+
+        const buttonDiv = document.getElementById("CurrentDocumentInfoButton")
+
+        const countDiv = document.getElementById("CurrentDocumentInfoButtonCountDiv")
+        const countText = countDiv.textContent  
+        
+
+
+        let connectionsComplete = false
+        if (countText && countText.includes('/')) {
+            const chunks = countText.split('/')
+            connectionsComplete = chunks[0] === chunks[1]  
+        }
+        
+        buttonDivWrapper.style.backgroundColor = this.isShowingInfo ? 'rgb(72, 77, 233)' : 'transparent'
+        
+    
+        while (buttonDiv.firstChild) {
+            buttonDiv.removeChild(buttonDiv.firstChild)
+        }
+        const iconPath = this.isShowingInfo ? iconPaths.ic_info_white : iconPaths.ic_info
+        this.createOneIconComponent(buttonDiv, iconPath, 'CurrentDocumentInfoButton', 24)
+        
+        
+        const newCountDiv = document.createElement('div')
+        newCountDiv.id = "CurrentDocumentInfoButtonCountDiv"
+        newCountDiv.className = "CurrentDocumentTopButtonCountDiv"
+        newCountDiv.textContent = countText
+        newCountDiv.classList.add(this.isShowingInfo ? 'CurrentDocumentInfoButtonCountDivSelected' : (connectionsComplete ? 'CurrentDocumentInfoButtonCountDivComplete' : 'CurrentDocumentInfoButtonCountDivIncomplete'))
+        buttonDiv.appendChild(newCountDiv)
+        newCountDiv.style.display = countText ? 'flex' : 'none'
+            
+        
+
+        
+        const infoDivContainer = document.getElementById("CurrentDocumentInfoContainer")
+        infoDivContainer.style.display = this.isShowingInfo ? 'flex' : 'none'
+
+        if(this.isShowingInfo){
+            this.infoManager = new PageInfoManager()
+            this.infoManager.renderData()
+        }
+   
+        g.readingManager.redrawAllFlinks()
+        
+    }
+
+   
+  
+
+
+
+    isOkToShowFlinks() {
+        return ((!g.readingManager.isFullScreen && g.readingManager.rightNotesData.length) || g.readingManager.mainDocType === 'c')  && !(this.isShowingInfo || this.isLeftExporting || this.isLeftSourceCodeShowing ||  this.isRightSourceCodeShowing)
+    }
+
+
+ 
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+
+    
+
+
+
+    async updateConnectedDocumentsVisibility() {
+        const allDocumentsContainer = document.getElementById("AllDocumentsContainer")
+        const allRightDocumentsContainer = document.getElementById("AllRightDocumentsContainer")
+        
+       // const screenWidth = window.innerWidth
+
+         const screenWidth = window.innerWidth
+        g.readingManager.docWidth = (screenWidth - kMiddleGap) / 2// g.readingManager.docWidth
+
+        const docWidth = g.readingManager.docWidth// ( screenWidth - kMiddleGap) / 2
+        const rightDocLeft = docWidth + kMiddleGap
+
+        allDocumentsContainer.style.backgroundColor = !g.readingManager.isFullScreen ? 'lightGray' : 'transparent'
+        allDocumentsContainer.style.pointerEvents = !g.readingManager.isFullScreen ? 'all' : 'none'
+
+        allRightDocumentsContainer.style.width = `${docWidth}px`
+        allRightDocumentsContainer.style.left = `${rightDocLeft}px`
+        allRightDocumentsContainer.style.display = !g.readingManager.isFullScreen ? 'flex' : 'none'
+    
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+
+
+        if(!g.readingManager.isFullScreen){
+            this.populatePanelsOfOneRightDoc()
+
+            const titleSpan = document.getElementById("RightDocumentTitleSpan")
+            titleSpan.innerText = noteData.title ?? ''
+        }else{
+            
+            this.hideMiddleCanvas()
+
+         //   g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.removeFlinksFromRightDiv()
+        }
+
+        g.readingManager.redrawAllFlinks()
+
+    }
+
+
+ 
+
+    showMiddleCanvas() {
+        if (g.readingManager.isFullScreen && g.readingManager.mainDocType === 'h') return
+        if(g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
+        const screenHeight = window.innerHeight
+
+        g.flinksCanvas.style.left = 0
+        g.flinksCanvas.style.top = `${kLeftDivTop + 1}px`
+        g.flinksCanvas.style.width = `${window.innerWidth}px`
+        g.flinksCanvas.style.height = `${screenHeight - kLeftDivTop - 1}px`
+   
+        g.flinksCanvas.style.display = 'flex'
+
+
+
+        var dpr = window.devicePixelRatio || 1
+        // Get the size of the canvas in CSS pixels.
+        var canvasRect = g.flinksCanvas.getBoundingClientRect()
+        g.flinksCanvas.width = canvasRect.width * dpr
+        g.flinksCanvas.height = canvasRect.height * dpr
+    
+        g.flinksCtx.scale(dpr, dpr)
+
+        g.readingManager.changesInReadingModeExist = true
+
+
+        const canvasTopDiv = document.getElementById('middle-canvas-topDiv')
+        canvasTopDiv.style.position = 'absolute'
+        canvasTopDiv.style.left = `${g.readingManager.docWidth}px`
+        canvasTopDiv.style.top = 0
+        canvasTopDiv.style.width = `${kMiddleGap}px`
+        canvasTopDiv.style.height = `${kLeftDivTop + 1}px`
+        // canvasTopDiv.style.backgroundColor = 'yellow'
+        canvasTopDiv.style.zIndex = 21
+        canvasTopDiv.style.display = 'flex'
+
+
+      //  this.showMiddleArrow()
+
+    
+
+    }
+
+    // showMiddleArrow(){
+    //     const svg = document.getElementById("svgArrow")
+    //     removeAllChildren(svg)
+
+    //     const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        
+
+    //     const color = noteData.line.color
+
+    //     if(noteData.inverted){
+    //         svg.innerHTML = `<path d="M0 6L10 0.226497V11.7735L0 6ZM28 7L9 7V5L28 5V7Z" fill="${color}"/>`
+    //     }else{
+    //         svg.innerHTML = `<path d="M28 6L18 0.226497V11.7735L28 6ZM0 7L19 7V5L0 5L0 7Z" fill="${color}"/>`
+
+    //     }
+
+    //     const listOpenButton = document.getElementById("LinksOpenButton")
+    //     const twoCollages = g.readingManager.mainCollageViewer && noteData.collageViewer
+    //     listOpenButton.style.display = noteData.links && noteData.links.length && !twoCollages && !this.isShowingInfo && !this.isLeftSourceCodeShowing && !this.isLeftExporting ? 'flex' : 'none'
+
+    //     svg.addEventListener('click',this.arrowButtonPressed)
+    // }
+
+
+    arrowButtonPressed = async (e) => {
+        e.stopPropagation()
+        
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        
+
+        g.readingManager.selectedRightDocIndex = 0
+        const nextRightDocId = g.readingManager.mainDocId
+        const nextRightDocType = g.readingManager.mainDocType
+
+        let nextLeftScrollTop = null
+        let nextLeftCollageInfo = null
+        if(noteData.docType === 'h'){
+            nextLeftScrollTop = noteData.scrollDiv.scrollTop
+        }else if(noteData.docType === 'c'){
+            const collageViewer = noteData.collageViewer
+            const viewport = collageViewer.viewport
+            nextLeftCollageInfo = {x:viewport.origin.x,y:viewport.origin.y,k:collageViewer.k}
+        }
+
+
+        let nextRightScrollTop = null
+        let nextRightCollageInfo = null
+        if(nextRightDocType === 'h'){
+            const scrollDiv = document.getElementById("CurrentDocument")
+            nextRightScrollTop = scrollDiv.scrollTop
+        }else if(nextRightDocType === 'c'){
+            const collageViewer = g.readingManager.mainCollageViewer
+            const viewport = collageViewer.viewport
+            nextRightCollageInfo = {x:viewport.origin.x,y:viewport.origin.y,k:collageViewer.k}
+        }
+        
+        
+    
+  
+
+        g.readingManager.isViewingConnectedDocuments = true
+        this.updateConnectedDocumentsVisibility()
+
+        let index = g.readingManager.rightNotesData.findIndex(item => {
+            return item.docId == nextRightDocId && item.docType === nextRightDocType
+        })
+
+        if(index < 0)index = 0
+
+        this.showTab(index)
+
+  
+        if(nextLeftScrollTop !== null){
+            const scrollDiv = document.getElementById("CurrentDocument")
+            scrollDiv.scrollTop = nextLeftScrollTop
+        }
+
+        if(nextLeftCollageInfo !== null){
+            const {x,y,k} = nextLeftCollageInfo
+            g.readingManager.mainCollageViewer.updateViewport(x,y,k)
+           
+        }
+
+        if(nextRightScrollTop !== null){
+            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+            noteData.scrollDiv.scrollTop = nextRightScrollTop 
+        }
+
+        if(nextRightCollageInfo !== null){
+            const {x,y,k} = nextRightCollageInfo
+            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+            noteData.collageViewer.updateViewport(x,y,k)
+        } 
+
+    }
+
+    hideMiddleCanvas(){
+        if(g.flinksCanvas){
+            g.flinksCanvas.style.display = 'none'
+        }
+
+        const canvasTopDiv = document.getElementById('middle-canvas-topDiv')
+        canvasTopDiv.style.display = 'none'
+
+    }
+
+
+    getCurrentDocTopOffset() {
+        
+        if (g.readingManager.mainDocType === 'c') {
+            return this.currentDocTopPanelShowing ? 50 : 0
+        }
+
+        const parent = document.getElementById("CurrentDocument");
+        const child = document.getElementById("CurrentDocumentMainDiv");
+
+      
+        const parentRect = parent.getBoundingClientRect();
+        const childRect = child.getBoundingClientRect();
+
+   
+        return childRect.top - parentRect.top + parent.scrollTop;
+ 
+    }
+
+
+    getRightDocTopOffset(noteData) {
+        if (noteData.docType === 'c') {
+            return noteData.currentDocTopPanelShowing ? 50 : 0
+        }
+        
+        const parent = noteData.scrollDiv
+        const child = getPresentationDivFrom(parent)
+
+      
+        const parentRect = parent.getBoundingClientRect();
+        const childRect = child.getBoundingClientRect();
+
+  
+        return childRect.top - parentRect.top + parent.scrollTop;
+ 
+    }
+
+    // getRightDocTopPanelHeight(noteData){
+    //     return noteData.currentDocTopPanelShowing ? 50 : 0
+    // }
+
+    getCurrentDocLeftVerticalPanelWidth(){
+        const panelWidth = g.readingManager.isFullScreen ? kVerticalPanelInFullscreenWidth : kVerticalPanelWidth
+        return this.currentDocLeftPanelShowing ? panelWidth : 0
+    }
+
+    getCurrentDocRightVerticalPanelWidth(){
+        const panelWidth = g.readingManager.isFullScreen ? kVerticalPanelInFullscreenWidth : kVerticalPanelWidth
+        return this.currentDocRightPanelShowing ? panelWidth : 0
+    }
+
+
+    toggleFlinksList = (dontCloseOthers = false) => {
+        if(!dontCloseOthers)this.closeAllExcept(this.toggleFlinksList)
+        if(this.isFlinksListOpen){
+            this.closeFlinksList()
+        }else{
+            this.openFlinksList()
+        }
+    }
+
+    openFlinksList = () => {
+        const iconPaths = g.iconsInfo.iconPaths
+        const flinksListContainerDiv = document.getElementById("LinksListContainerDiv")
+        const flinksContainerWidth = 600
+        flinksListContainerDiv.style.top = (kLeftDivTop + 1) + 'px'
+        flinksListContainerDiv.style.left = `${g.readingManager.docWidth + kMiddleGap / 2 - flinksContainerWidth / 2}px`
+        
+        flinksListContainerDiv.style.maxHeight = `${window.innerHeight - kLeftDivTop}px`
+        
+        const topRowContainer = document.getElementById("LinksListTopRow")
+        
+        
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        
+        const flinksData = g.readingManager.currentConnection
+        if (!flinksData || !flinksData.activeFlinks) return
+                
+        const modificationMessage = document.getElementById("LinksListModificationMessage")
+        const flinksWereModified = flinksData.flinksWereModifiedOnLeftSide || flinksData.flinksWereModifiedOnRightSide
+        modificationMessage.style.display = flinksWereModified ? 'flex' : 'none'
+        const originalLinksButton = document.getElementById("LinksListOriginalLinksButton")
+        const originalLinksRightSpacer = document.getElementById("LinksListOriginalLinksSpacer")
+        originalLinksButton.style.display = flinksWereModified ? 'flex' : 'none'
+        originalLinksRightSpacer.style.display = flinksWereModified ? 'flex' : 'none'
+
+
+        flinksListContainerDiv.style.display = 'flex'
+
+        const firstDocType = g.readingManager.mainDocType
+        const secondDocType = noteData.docType
+        
+        const shouldShowTopRow = firstDocType === 'h' && secondDocType === 'h'
+        topRowContainer.style.display = shouldShowTopRow ? 'flex' : 'none'
+
+
+
+        let foundBrokenLinks = false
+        let foundLinksOutOfBounds = false
+
+
+
+        for(const flink of flinksData.activeFlinks){
+            const isFlinkOutOfBounds = flink.leftEndOutOfBounds || flink.rightEndOutOfBounds
+            const isBroken = flink.leftSideIsBroken || flink.rightSideIsBroken
+            
+            if(isBroken){
+                foundBrokenLinks = true
+            }
+
+            if(isFlinkOutOfBounds){
+                foundLinksOutOfBounds = true
+            }
+
+        }
+
+        let topRowEndSpacerWidth = 0
+        if(foundBrokenLinks)topRowEndSpacerWidth += 50
+        if(foundBrokenLinks || foundLinksOutOfBounds)topRowEndSpacerWidth += 30
+
+
+
+        if(shouldShowTopRow){
+            const topRowLeftContainer = document.getElementById("LinksListTopRowLeftSortButtonContainer")
+            removeAllChildren(topRowLeftContainer)
+            const leftIconPath = this.sortInRightDoc ? iconPaths.ic_sort_triangle_light : iconPaths.ic_sort_triangle
+    
+            const leftSortButton = createOneIconComponent(topRowLeftContainer,leftIconPath,'',24)
+    
+            leftSortButton.classList.add("LinksListSortButton")
+    
+            leftSortButton.addEventListener('click',() => {
+                this.sortInRightDoc = false
+                this.openFlinksList()
+            })
+    
+            
+            const topRowRightContainer = document.getElementById("LinksListTopRowRightSortButtonContainer")
+            removeAllChildren(topRowRightContainer)
+            const rightIconPath = this.sortInRightDoc ? iconPaths.ic_sort_triangle : iconPaths.ic_sort_triangle_light
+            const rightSortButton = createOneIconComponent(topRowRightContainer,rightIconPath,'',24)
+    
+            rightSortButton.classList.add("LinksListSortButton")
+    
+            rightSortButton.addEventListener('click',() => {
+                this.sortInRightDoc = true
+                this.openFlinksList()
+            })
+    
+            const topSpacer = document.getElementById("LinksListTopRowMiddleSpacer")
+            topSpacer.style.width = '42px'
+    
+            const topEndSpacer = document.getElementById("LinksListTopRowEndSpacer")
+            topEndSpacer.style.width = `${topRowEndSpacerWidth}px`
+
+        }
+
+
+        const flinksScrollDiv = document.getElementById("FlinksScrollDiv")
+        flinksScrollDiv.style.paddingTop = shouldShowTopRow ? '5px' : '30px'
+        removeAllChildren(flinksScrollDiv)
+       
+
+        
+        const unsortedLinks =  flinksData.activeFlinks
+
+        let links
+        if(this.sortInRightDoc){
+            links = unsortedLinks.sort((a,b) => {
+                const rightEndA = a.rightEnds[0]
+                const rightEndB = b.rightEnds[0]
+                return rightEndA.index - rightEndB.index
+            })
+        }else{
+            links = unsortedLinks.sort((a,b) => {
+                const leftEndA = a.leftEnds[0]
+                const leftEndB = b.leftEnds[0]
+                return leftEndA.index - leftEndB.index
+            })
+        }
+        
+        
+
+
+        
+
+
+
+        let leftText
+        let rightText
+     
+        if(firstDocType === 'h'){
+            const firstPresentationDiv = document.getElementById("CurrentDocumentMainDiv")
+            leftText = getTextFromDiv(firstPresentationDiv) 
+
+        }
+
+
+        const rightScrollDiv = noteData.scrollDiv
+        if(secondDocType === 'h'){
+            const rightPresentationDiv = getPresentationDivFrom(rightScrollDiv)
+            rightText = getTextFromDiv(rightPresentationDiv) 
+
+        }
+
+
+
+        
+
+
+
+
+        for(const flink of links){
+
+         
+            const isFlinkOutOfBounds = flink.leftEndOutOfBounds || flink.rightEndOutOfBounds
+
+            const shouldShowDeleteButton = isFlinkOutOfBounds || flink.leftSideIsBroken || flink.rightSideIsBroken
+
+            const shouldShowFixButton = flink.leftSideIsBroken || flink.rightSideIsBroken
+            
+            if(shouldShowFixButton){
+                foundBrokenLinks = true
+            }
+
+            if(isFlinkOutOfBounds){
+                foundLinksOutOfBounds = true
+            }
+
+
+
+            const leftEnd = flink.leftEnds[0]
+            const rightEnd = flink.rightEnds[0]
+
+            
+            
+            const row = document.createElement('div')
+            row.className = "FlinksListOneRow"
+            flinksScrollDiv.appendChild(row)
+            
+            const leftDiv = document.createElement('div')
+            if(firstDocType === 'h'){
+                const leftLine = leftText.substring(leftEnd.index,leftEnd.index + leftEnd.length)
+                leftDiv.className = "FlinkOneEndContainer"
+                if(flink.leftSideIsBroken || flink.leftEndOutOfBounds){
+                    leftDiv.classList.add("FlinkOneEndContainerBroken")
+                }
+                row.appendChild(leftDiv)
+                leftDiv.textContent = flink.leftEndOutOfBounds ? '...' : leftLine.replace('\n',' ')
+                leftDiv.addEventListener('click',(e) => {
+                    e.stopPropagation()
+                    g.readingManager.scrollMainDocToShowFlink(flink)
+                })
+            }else if(firstDocType === 'c'){
+                leftDiv.className = "FlinkPointCircle"
+                leftDiv.style.backgroundColor = flinksData.color
+                row.appendChild(leftDiv)
+            }
+            
+            const middleLineContainerDiv = document.createElement('div')
+            middleLineContainerDiv.className = "FlinksMiddleLineContainerDiv"
+            const middleLineDiv = document.createElement('div')
+            middleLineDiv.className = "FlinksMiddleLineDiv"
+            middleLineDiv.style.backgroundColor = flinksData.color
+            middleLineDiv.style.height = '2px'
+            middleLineContainerDiv.append(middleLineDiv)
+            row.appendChild(middleLineContainerDiv)
+
+            
+            const rightDiv = document.createElement('div')
+            if(secondDocType === 'h'){
+                const rightLine = rightText.substring(rightEnd.index,rightEnd.index + rightEnd.length)
+                rightDiv.className = "FlinkOneEndContainer"
+                if(flink.rightSideIsBroken || flink.rightEndOutOfBounds){
+                    rightDiv.classList.add("FlinkOneEndContainerBroken")
+                }
+                row.appendChild(rightDiv)
+                rightDiv.textContent = flink.rightEndOutOfBounds ? '...' : rightLine.replace('\n',' ')
+            
+                rightDiv.addEventListener('click',(e) => {
+                    e.stopPropagation()
+                    g.readingManager.scrollRightDocToShowFlink(flink,noteData)
+                })
+            
+            }else if(secondDocType === 'c'){
+                rightDiv.className = "FlinkPointCircle"
+                rightDiv.style.backgroundColor = flinksData.color
+                row.appendChild(rightDiv)
+            }
+
+            const smallFixButtonContainer = document.createElement('div')
+            smallFixButtonContainer.style.width = '50px'
+            smallFixButtonContainer.style.boxSizing = 'border-box'
+            smallFixButtonContainer.style.paddingLeft = '8px'
+            smallFixButtonContainer.style.paddingRight = '8px'
+            smallFixButtonContainer.style.display = foundBrokenLinks ? 'flex' : 'none'
+
+            if(shouldShowFixButton){
+                const smallFixButton = document.createElement('div')
+                smallFixButton.className = "ActionButton"
+                smallFixButton.textContent = "Fix"
+                smallFixButtonContainer.appendChild(smallFixButton)
+                smallFixButton.addEventListener('click',(e) => {
+                    e.stopPropagation()
+                    
+                    g.readingManager.fixOneBrokenLink(flink)
+                    this.openFlinksList()
+                    this.updateCurrentDocExportButton()
+                })
+            }
+
+            row.appendChild(smallFixButtonContainer)
+
+
+            const deleteButtonContainer = document.createElement('div')
+            deleteButtonContainer.className = "DeleteFlinkButton"
+            deleteButtonContainer.style.display = foundLinksOutOfBounds || foundBrokenLinks ? 'flex' : 'none'
+            
+            if(shouldShowDeleteButton){
+                const deleteButton = createOneIconComponent(deleteButtonContainer,iconPaths.ic_bucket_button,'',24)
+                deleteButton.addEventListener('click',(e) => {
+                    e.stopPropagation()
+                    
+
+                    g.readingManager.deleteOneFlink(flink)
+                    this.openFlinksList()
+                    this.updateCurrentDocExportButton()
+
+                })
+                deleteButton.classList.add('OpacityResponsiveButton')
+
+            }
+
+            row.appendChild(deleteButtonContainer)
+
+
+
+        }
+
+
+
+        this.isFlinksListOpen = true
+
+
+    }
+
+    fixBrokenFlinks = (e) => {
+        g.readingManager.fixBrokenFlinks()
+        this.openFlinksList()
+
+    }
+
+    closeFlinksList = () => {
+        const listContainer = document.getElementById("LinksListContainerDiv")
+        listContainer.style.display = 'none'
+        this.isFlinksListOpen = false
+    }
+
+    leftDocumentLeftPanelButtonPressed = () => {
+        this.currentDocLeftPanelShowing = !this.currentDocLeftPanelShowing
+
+        if(this.isLeftExporting){
+            this.toggleExport()
+        }
+        if(this.isShowingInfo){
+            this.toggleInfo()
+        }
+        if(this.isLeftSourceCodeShowing){
+            this.toggleSourceCode()
+        }
+
+        const commentsDiv = document.getElementById("leftDocLeftPanelComments")
+        if (this.currentDocLeftPanelShowing) {
+            const commentsUrl = g.readingManager.mainDocPanels.sidePanel.commentsUrl
+            if (commentsUrl) {
+                const {commentsTitle,noCommentsMessage} = g.readingManager.mainDocPanels.sidePanel
+                this.getComments(commentsDiv,commentsUrl,commentsTitle,noCommentsMessage,this)    
+            }
+
+            const iframe = document.getElementById("leftDocLeftPanel")
+            if(iframe && !iframe.src){
+                iframe.src = g.readingManager.mainDocPanels.sidePanel.url
+            }
+        } else {
+            this.cleanCommentsDiv(commentsDiv, this)
+        }
+   
+        this.updateLeftDocumentPanels()
+      
+        g.readingManager.redrawAllFlinks()   
+        
+    }
+    
+    leftDocumentRightPanelButtonPressed = async () => {
+        this.currentDocRightPanelShowing = !this.currentDocRightPanelShowing 
+
+        this.closeAllExcept(null)
+      
+
+        const commentsDiv = document.getElementById("leftDocRightPanelComments")
+        if(this.currentDocRightPanelShowing){
+
+            const commentsUrl = g.readingManager.mainDocPanels.sidePanel.commentsUrl
+            if (commentsUrl) {
+                const {commentsTitle,noCommentsMessage} = g.readingManager.mainDocPanels.sidePanel
+                this.getComments(commentsDiv,commentsUrl,commentsTitle,noCommentsMessage,this)                
+            }
+
+            const iframe = document.getElementById("leftDocRightPanel")
+            if(iframe && !iframe.src){
+               iframe.src = g.readingManager.mainDocPanels.sidePanel.url
+            }
+
+
+        } else {
+            this.cleanCommentsDiv(commentsDiv, this)
+        }
+
+        this.updateLeftDocumentPanels() 
+        g.readingManager.redrawAllFlinks()
+    }
+
+    rightDocumentLeftPanelButtonPressed = () => {
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        noteData.currentDocLeftPanelShowing = !noteData.currentDocLeftPanelShowing
+
+        
+        const commentsDiv = document.getElementById("rightDocLeftPanel" + noteData.index + "Comments")
+        if(noteData.currentDocLeftPanelShowing){
+
+            const commentsUrl = noteData.panels.sidePanel.commentsUrl
+            if (commentsUrl) {
+                const {commentsTitle,noCommentsMessage} = noteData.panels.sidePanel
+                this.getComments(commentsDiv,commentsUrl,commentsTitle,noCommentsMessage,noteData)
+            }
+
+            const iframe = document.getElementById("rightDocLeftPanel" + noteData.index)
+            if(iframe && !iframe.src){
+                iframe.src = noteData.panels.sidePanel.url
+            }
+        } else {
+            this.cleanCommentsDiv(commentsDiv, noteData)
+        }
+   
+        this.updateRightDocumentPanels(noteData)
+        g.readingManager.redrawAllFlinks()
+    }
+    
+    rightDocumentRightPanelButtonPressed = () => {
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        noteData.currentDocRightPanelShowing = !noteData.currentDocRightPanelShowing 
+        
+        const commentsDiv = document.getElementById("rightDocRightPanel" + noteData.index + "Comments")
+        if(noteData.currentDocRightPanelShowing){
+
+            const commentsUrl = noteData.panels.sidePanel.commentsUrl
+            if (commentsUrl) {
+                const {commentsTitle,noCommentsMessage} = noteData.panels.sidePanel
+                this.getComments(commentsDiv,commentsUrl,commentsTitle,noCommentsMessage,noteData)
+            }
+
+            const webview = document.getElementById("rightDocRightPanel" + noteData.index)
+            if(webview && !webview.src){
+                webview.src = noteData.panels.sidePanel.url
+            }
+        } else {
+            this.cleanCommentsDiv(commentsDiv, noteData)
+        }
+
+        this.updateRightDocumentPanels(noteData) 
+        g.readingManager.redrawAllFlinks()
+    }
+
+    cleanCommentsDiv(commentsDiv, listnersOwner) {
+        if (!commentsDiv) return
+        g.noteDivsManager.removeEventListenersFromNoteComments(commentsDiv, listnersOwner)
+        while (commentsDiv.firstChild) {
+            commentsDiv.firstChild.remove()
+        }  
+    }
+
+    getComments = async (commentsDiv, commentsUrl, commentsTitle, noCommentsMessage, listenersOwner, page = 1) => {
+        if (page === 1) {
+            listenersOwner.commentsDiv = commentsDiv
+            listenersOwner.commentsUrl = commentsUrl
+            listenersOwner.currentCommentsPage = 1
+            listenersOwner.allItemsLoaded = false
+            listenersOwner.comments = []
+            listenersOwner.commentsTitle = commentsTitle
+            listenersOwner.noCommentsMessage = noCommentsMessage
+
+        }
+        
+        if(listenersOwner.allItemsLoaded)return
+       
+
+        let finalCommentsUrl
+
+
+        if (commentsUrl.includes('?')) {
+            finalCommentsUrl = commentsUrl + '&page=' + page + '&order=asc'
+       } else {
+           finalCommentsUrl = commentsUrl + '?page=' + page + '&order=asc'
+       }
+
+
+        if (page > 1) {
+            listenersOwner.isLoadingMore = true
+        }
+
+        const result = await fetchWebPage(finalCommentsUrl)
+
+        if (!result) {
+            showToastMessage('Something went wrong')
+            return null
+        }
+        
+        const {text,error} = result
+        if (error) {
+            showToastMessage('Error:' + error)
+            return
+        }
+
+        const jsonArray = JSON.parse(text)
+
+        if (!jsonArray) return
+
+        if (!jsonArray.length) {
+            listenersOwner.allItemsLoaded = true
+        }
+        
+        listenersOwner.currentPage = page
+        listenersOwner.isLoadingMore = false
+        listenersOwner.comments = listenersOwner.comments.concat(jsonArray)
+
+
+        let parents = listenersOwner.comments.filter(item => item.parent == 0)
+        const notParents = listenersOwner.comments.filter(item => item.parent != 0)
+
+        parents = parents.sort((a,b) => a.date.localeCompare(b.date))
+
+
+
+        parents.forEach((item) => {
+            item.indentationLevel = 0
+            this.findChildren(item,notParents)
+        })
+
+
+        const finalListOfComments = []
+        parents.forEach((item) => {
+            this.flattenListOfComments(item,finalListOfComments)
+        })
+
+        
+        const savedScrollTop = commentsDiv.scrollTop
+
+        this.cleanCommentsDiv(commentsDiv, listenersOwner)
+       
+        if (commentsTitle && finalListOfComments.length) {
+            const h2 = document.createElement('h2')
+            h2.className = 'comments-title'
+            h2.textContent = commentsTitle
+            commentsDiv.appendChild(h2)
+            
+        } else if(noCommentsMessage) {
+            const span = document.createElement('span')
+            span.className = 'no-comments-text'
+            span.textContent = noCommentsMessage
+            commentsDiv.appendChild(span)
+        }
+
+        finalListOfComments.forEach((item) => {
+
+            const {id, parent,author_name, author_avatar_urls, date, content, indentationLevel} = item
+
+            const html = sanitizeHtml(content.rendered)
+
+            this.addCommentToDiv(commentsDiv, author_avatar_urls, author_name,html,date,indentationLevel)
+
+
+            
+        })
+
+        commentsDiv.scrollTop = savedScrollTop
+
+
+
+        g.noteDivsManager.addEventListenersToNoteComments(commentsDiv, listenersOwner)
+
+      
+    }
+
+
+    findChildren = (parent,restArray) => {
+      
+        parent.children = restArray.filter((item) => item.parent == parent.id).sort((a,b) => a.date.localeCompare(b.date))
+        
+        parent.children.forEach((item => {
+            item.indentationLevel = parent.indentationLevel + 1
+            this.findChildren(item,restArray)
+        }))
+        
+    }
+
+    flattenListOfComments = (item, finalArray) => {
+
+        finalArray.push(item)
+        item.children.forEach((child) => {
+            this.flattenListOfComments(child,finalArray)
+        })
+    }
+
+    addCommentToDiv = (commentsDiv, author_avatar_urls, author_name,html,date,indentationLevel) => {
+        const oneCommentDiv = document.createElement('div')
+        oneCommentDiv.className = 'OneCommentContainerDiv'
+        oneCommentDiv.style.marginLeft = `${20 * indentationLevel}px`
+
+        const avatarString = author_avatar_urls && author_avatar_urls['48'] ? `<img src="${author_avatar_urls['48']}" class="OneCommentAvatar"/>` : ''
+        oneCommentDiv.innerHTML = `<div class="OneCommentTopRow">
+            ${avatarString}
+            <div class="OneCommentNameColumn">
+                <span class="OneCommentAuthorName">${author_name}</span>
+                <span class="OneCommentDate">${isoToHumanReadableDate(date)}</span>
+            </div>
+        </div>
+        <div class="OneCommentContent">${html}</div>
+        `
+    
+        commentsDiv.appendChild(oneCommentDiv)
+    }
+
+    
+
+    updateLeftDocumentPanels = () => {
+        const leftPanel = document.getElementById("CurrentDocumentLeftPanel")
+        const rightPanel = document.getElementById("CurrentDocumentRightPanel")
+        const topPanel = document.getElementById("CurrentDocumentTopPanel")
+        const dropdownMenuDiv = document.getElementById("CurrentDocumentDropDownMenu")
+        const topPanelLogoLink = document.getElementById("CurrentDocumentTopPanelLogoLink")
+        const topPanelOptionsRow = document.getElementById("CurrentDocumentTopPanelOptionsRow")
+        const sandwichButtonDiv = document.getElementById("LeftSandwichButton")
+       
+        const leftVerticalPanelWidth = this.getCurrentDocLeftVerticalPanelWidth()
+        const rightVerticalPanelWidth = this.getCurrentDocRightVerticalPanelWidth()
+
+        const allDivs = {
+            topPanel,leftPanel,rightPanel,
+            dropdownMenuDiv,topPanelLogoLink,topPanelOptionsRow,sandwichButtonDiv
+        }
+
+        this.updateDocumentPanels(allDivs,leftVerticalPanelWidth,rightVerticalPanelWidth,this)
+
+    }
+
+
+    updateRightDocumentPanels = (noteData) => {
+        if(noteData.docType !== 'h')return
+        
+        const docId = noteData.docId
+        const leftPanel = document.getElementById("DocumentLeftPanel" + docId)
+        const rightPanel = document.getElementById("DocumentRightPanel" + docId)
+        const topPanel = document.getElementById("DocumentTopPanel" + docId)
+        const dropdownMenuDiv = document.getElementById("DocumentDropDownMenu" + docId)
+        const topPanelLogoLink = document.getElementById("DocumentTopPanelLogoLink" + docId)
+        const topPanelOptionsRow = document.getElementById("DocumentTopPanelOptionsRow" + docId)
+        const sandwichButtonDiv = document.getElementById("SandwichButton" + docId)
+       
+        const leftVerticalPanelWidth = noteData.currentDocLeftPanelShowing ? kVerticalPanelWidth : 0
+        const rightVerticalPanelWidth = noteData.currentDocRightPanelShowing ? kVerticalPanelWidth : 0
+
+
+        const allDivs = {
+            topPanel,leftPanel,rightPanel,
+            dropdownMenuDiv,topPanelLogoLink,topPanelOptionsRow,sandwichButtonDiv
+        }
+
+        this.updateDocumentPanels(allDivs,leftVerticalPanelWidth,rightVerticalPanelWidth,noteData)
+
+    }
+
+
+
+
+
+
+    updateDocumentPanels = (allDivs,leftPanelWidth,rightPanelWidth,dataObject) => {
+        const {topPanel,leftPanel,rightPanel,
+            dropdownMenuDiv,topPanelLogoLink,topPanelOptionsRow,sandwichButtonDiv
+        } = allDivs
+
+
+        
+
+
+        
+        leftPanel.style.width = `${leftPanelWidth}px`
+        rightPanel.style.width = `${rightPanelWidth}px`
+
+        leftPanel.style.display = dataObject.currentDocLeftPanelShowing ? 'flex' : 'none'
+        rightPanel.style.display = dataObject.currentDocRightPanelShowing ? 'flex' : 'none'
+  
+
+        if(dataObject.currentDocTopPanelShowing){
+
+            while(dropdownMenuDiv.firstChild){
+                dropdownMenuDiv.removeChild(dropdownMenuDiv.firstChild)
+            }
+
+            if(dataObject.docTopPanelLinks && dataObject.docTopPanelLinks.length){
+
+                const allDivs = {topPanelDiv:topPanel,topPanelLogoLink,topPanelOptionsRow,dropdownMenuDiv,sandwichButtonDiv}
+
+                this.addLinksToTopPanel(dataObject.docTopPanelLinks,dataObject.docTopPanelTextColor,allDivs,dataObject)
+            }
+
+        }
+
+
+    }
+
+
+    toggleLeftDropDownMenu = () => {
+        
+
+        this.isShowingLeftDropdownMenu = !this.isShowingLeftDropdownMenu
+        const dropdownMenu = document.getElementById("CurrentDocumentDropDownMenu")
+        dropdownMenu.style.display = this.isShowingLeftDropdownMenu ? 'flex' : 'none'
+
+    }
+
+    toggleRightDropDownMenu = (e) => {
+        if (e) {
+            e.stopPropagation()   
+        }
+        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
+        
+        noteData.isShowingDropdownMenu = !noteData.isShowingDropdownMenu
+        const dropdownMenu = document.getElementById("DocumentDropDownMenu" + noteData.docId)
+        
+        dropdownMenu.style.display = noteData.isShowingDropdownMenu ? 'flex' : 'none'
+
+    }
+
+    addCommentsSectionToSidePanel = (panelDiv, id) => {
+        const div = document.createElement('div')
+        div.id = id
+        div.className = 'StaticCommentsSection'
+        panelDiv.appendChild(div)
+
+    }
+
+
+    addIframeToSidePanel = (panelDiv, id) => {
+        const iframe = document.createElement('iframe')
+        iframe.id = id
+        iframe.className = 'WidgetIframe'
+
+        panelDiv.appendChild(iframe)
+
+    }
+
+
+     createOneIconComponent(parent,iconPath,componentId,width = 24,height = 0){
+        createOneIconComponent(parent,iconPath,componentId,'Reader-OneIconComponent',width,height)
+     }
+     
+
+    async updateCurrentDocExportButton() {
+        const currentDocumentExportButton = document.getElementById("CurrentDocumentExportButton")
+
+        let changesExist = false
+        for (const flinksData of g.readingManager.connections) {
+            if (flinksData.flinksWereModifiedOnLeftSide || flinksData.flinksWereModifiedOnRightSide) {
+                changesExist = true
+                break
+            }
+        }
+
+        currentDocumentExportButton.style.display = changesExist ? 'flex' : 'none'
+        
+    }
+
+    updateDocumentImageWidths(notePresentationDiv) {
+
+        const images = notePresentationDiv.getElementsByTagName('img')
+ 
+        let textColumnWidth = getTextColumnWidth()
+  
+            
+
+
+        for(let i = 0; i < images.length; i++){
+            const image = images.item(i)
+            
+          
+            if (image['data-width']) {
+                image.style.width =  Math.min(image['data-width'] , textColumnWidth) + 'px'  
+            } else {
+                image.style.width = '100%'
+            }
+            image.style.height = 'auto'
+
+           
+        
+           
+        }
+
+
+        const iframePlaceholders = notePresentationDiv.getElementsByClassName('iframe-placeholder')
+
+
+        for (let i = 0; i < iframePlaceholders.length; i++) {
+            const placeholder = iframePlaceholders.item(i)
+       
+            const height = textColumnWidth * placeholder['data-ratio']
+            placeholder.style.width = textColumnWidth + 'px'
+            placeholder.style.height = height + 'px'
+
+            const iframe = placeholder.querySelector('iframe')
+            if (iframe) {
+                iframe.style.width = textColumnWidth + 'px'
+                iframe.style.height = height + 'px'
+            }
+
+        }
+
+    }
+
+
+    hidePanelsOfCurrentDocument() {
+        const documentLeftPanelButton = document.getElementById("CurrentDocumentLeftPanelButton")
+        const documentRightPanelButton = document.getElementById("CurrentDocumentRightPanelButton")
+
+        const topPanelDiv = document.getElementById("CurrentDocumentTopPanel")
+        const bottomPanelDiv = document.getElementById("CurrentDocumentBottomPanel")
+        const leftPanelDiv = document.getElementById("CurrentDocumentLeftPanel")
+        const rightPanelDiv = document.getElementById("CurrentDocumentRightPanel")
+         
+        this.currentDocTopPanelShowing = false
+        this.currentDocBottomPanelShowing = false
+        this.currentDocLeftPanelShowing = false
+        this.currentDocRightPanelShowing = false
+        documentLeftPanelButton.style.display = 'none'
+        documentRightPanelButton.style.display = 'none'
+        
+        topPanelDiv.style.display = 'none'
+        bottomPanelDiv.style.display = 'none'
+        leftPanelDiv.style.display = 'none'
+        rightPanelDiv.style.display = 'none'
+        
+    }
+
+
+    showMainDocSpinner() {
+      const spinner = document.getElementById('mainDocSpinner');
+      spinner.style.display = 'block';
+      
+    }
+  
+    hideMainDocSpinner() {
+      const spinner = document.getElementById('mainDocSpinner');
+      spinner.style.display = 'none';
+    }
+
+
+   
+}
+
+
+export default PopupDocumentManager

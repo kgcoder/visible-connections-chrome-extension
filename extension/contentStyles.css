@@ -1,0 +1,24 @@
+a[data-static] {
+    color: green !important;
+}
+
+div.HasFlinksEl{
+    display: flex;
+    /* position: absolute; */
+    /* top:0;
+    right:20%; */
+    cursor: pointer;
+    
+}
+
+.HasFlinksButton{
+    display: flex;
+    align-items: center;
+    gap:10px;
+}
+
+span.HasFlinksEl{
+    /* font-size: 10px; */
+    /* color:rgb(148, 97, 1); */
+    text-decoration: underline;
+}
