@@ -17,6 +17,9 @@ import Line from "../models/Line.js";
 
 export async function parseCDOC(url,contentString){
 
+    const fallbackReg = new RegExp(/<fallback\b[^>]*>[\s\S]*?<\/fallback>/,'mig')
+    contentString = contentString.replace(fallbackReg,'')
+
     const parser = new DOMParser();
 
     let title = ''

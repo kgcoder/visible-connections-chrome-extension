@@ -16,6 +16,11 @@ import FloatingLink from "../models/FloatingLink.js"
 
 export function parseHDOC(url,fullContentString){
 
+    const fallbackReg = new RegExp(/<fallback\b[^>]*>[\s\S]*?<\/fallback>/,'mig')
+    fullContentString = fullContentString.replace(fallbackReg,'')
+
+
+
     let contentReg = /(<content(\b[^>]*)>)([\s\S]*)<\/content>/m
     let contentMatch = fullContentString.match(contentReg)
     
@@ -33,6 +38,8 @@ export function parseHDOC(url,fullContentString){
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(newXMLContentStringWithHtmlPlaceholder, 'application/xml');
     
+
+
     const sanitizedHtml = isPlainText ? htmlString : sanitizeHtml(htmlString)
     
     let updatedFullContentString = newXMLContentStringWithHtmlPlaceholder.replace('<content_placeholder></content_placeholder>', firstContentTag + sanitizedHtml + `</content>`)

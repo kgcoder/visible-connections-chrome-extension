@@ -17,6 +17,10 @@ import FloatingLink from "../models/FloatingLink.js";
 
 export function parseCondoc(url, fullContentString) {
 
+    const fallbackReg = new RegExp(/<fallback\b[^>]*>[\s\S]*?<\/fallback>/,'mig')
+    fullContentString = fullContentString.replace(fallbackReg,'')
+
+
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(fullContentString, 'application/xml');
 
