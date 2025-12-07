@@ -12,7 +12,7 @@ html, body{
 
     display:flex;
     height:50px;
-    background-color: darkslateblue;
+    background-color: rgb(183, 38, 38);
     justify-content: center;
     align-items: center;
 
@@ -28,7 +28,8 @@ html, body{
 }
 
 #mainMenu{
-    padding: 10px;
+    display: none;
+    padding-left: 10px;
 }
 
 .vertical-spacer{
@@ -43,15 +44,12 @@ html, body{
     width:3px;
 }
 
-#popup-footer{
-    display: none;
-    height: 40px;
-    background-color: #ECEBEB;
-    margin-top: 10px;
-    align-items: center;
-    padding-left: 10px;
-    padding-right: 10px;
 
+
+#links-container{
+    display: flex;
+    flex-direction: column;
+    padding-left: 10px;
 }
 
 .PopupItemDiv{

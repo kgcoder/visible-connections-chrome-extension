@@ -81,22 +81,18 @@ function updatePageMetadata(response) {
     
 
 
-    const myLink = document.getElementById("my-link")
-    const siteLink = document.getElementById("site-link")
+    const howToLink = document.getElementById("how-to-link")
     const examplesLink = document.getElementById("visible-connections-examples-link")
     const sourceCodeLink = document.getElementById("source-code-link")
 
-    myLink.addEventListener('click',() => window.open('https://x.com/karengrig_dev','_blank'))
-    siteLink.addEventListener('click',() => window.open('https://reinventingtheweb.com','_blank'))
-    examplesLink.addEventListener('click',() => window.open('https://reinventingtheweb.com/2025/06/15/examples-of-documents-with-visible-connections/','_blank'))
+   examplesLink.addEventListener('click',() => window.open('https://reinventingtheweb.com/community-resources/','_blank'))
+    howToLink.addEventListener('click',() => window.open('https://reinventingtheweb.com/how-to-create-visible-connections/','_blank'))
     sourceCodeLink.addEventListener('click',() => window.open('https://github.com/kgcoder/visible-connections-chrome-extension','_blank'))
 
 
 
 
-    const popupFooter = document.getElementById("popup-footer")
-    popupFooter.style.display = 'flex'
-
+    mainMenu.style.display = 'flex'
 
 
 }
