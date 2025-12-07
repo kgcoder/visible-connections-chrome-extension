@@ -1593,7 +1593,6 @@ class ReadingManager {
         
 
                 this.addOneHightlightToDiv(firstPresentationDiv,`leftDocFlinkCanvas${i}_${j}`,'leftDocFlinkCanvas',fillColor,isFlinkBroken,top,height,lineRects)
-    
                 flink.isLeftSideDrawn = true
                 j++
             }
@@ -1644,8 +1643,8 @@ class ReadingManager {
             const lineRects = flink.rightRects
 
             this.addOneHightlightToDiv(presentationDiv,`rightDocFlinkCanvas${i}`,'rightDocFlinkCanvas',fillColor,isFlinkBroken,top,height,lineRects)
-        
             flink.isRightSideDrawn = true
+        
             i++
 
         }
@@ -1984,11 +1983,14 @@ class ReadingManager {
                     await g.readingManager.downloadOnePage(flinksData.url)
                     const noteData = this.rightNotesData[this.rightNotesData.length - 1]
 
-                    if (noteData.docType === 'c') {
-                        this.moveRightCollageInPositionForLink(flink,mainScrollDocDiv.scrollTop, topPanelHeight)
-                    }else if(noteData.docType === 'h'){
-                        const secondScrollDiv = noteData.scrollDiv
-                        this.scrollRightDocInPositionForLink(flink,mainScrollDocDiv.scrollTop,secondScrollDiv,noteData)
+                    if(noteData){
+                        if (noteData.docType === 'c') {
+                            this.moveRightCollageInPositionForLink(flink,mainScrollDocDiv.scrollTop, topPanelHeight)
+                        }else if(noteData.docType === 'h'){
+                            const secondScrollDiv = noteData.scrollDiv
+                            this.scrollRightDocInPositionForLink(flink,mainScrollDocDiv.scrollTop,secondScrollDiv,noteData)
+                        }
+
                     }
                     return
                 }

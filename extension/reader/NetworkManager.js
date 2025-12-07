@@ -32,26 +32,31 @@ export function fetchWebPage(url) {
         const currentPageUrl = g.readingManager.mainDocData.url
         const currentPageHostname = new URL(currentPageUrl).hostname
         
-    const requestedPageHostname = new URL(url).hostname
+        try{
+          const requestedPageHostname = new URL(url).hostname
+          if (requestedPageHostname === currentPageHostname) {
+          
+              try {
+                  const result = await fetch(url)
+                  const text = await result.text()
+          
+                  currentRequests.delete(url)
+                  resolve({text, error:''})
+                  
+              } catch (e) {
+                  currentRequests.delete(url)
+                  resolve({error:e, text:''})
+              }
+  
+          
+              return
+          
+           }
 
-        if (requestedPageHostname === currentPageHostname) {
-        
-            try {
-                const result = await fetch(url)
-                const text = await result.text()
-        
-                currentRequests.delete(url)
-                resolve({text, error:''})
-                
-            } catch (e) {
-                currentRequests.delete(url)
-                resolve({error:e, text:''})
-            }
+        }catch(e){
+          resolve({error:e, text:'Something is wrong with the URL'})
+        }
 
-        
-            return
-        
-    }
 
 
 
