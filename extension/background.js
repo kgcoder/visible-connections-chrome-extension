@@ -34,7 +34,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
           id: msg.id,
           isError: true,
           url:msg.url,
-          html: `ERROR: ${err.message}`
+          html: `ERROR: ${e.message}`
       });
     }
   }
