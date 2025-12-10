@@ -139,7 +139,7 @@ class PageInfoManager {
                     const existingNoteDataIndex = g.readingManager.getNoteIndexByUrl(url)
     
                     if (existingNoteDataIndex !== -1) {
-                        g.pdm.showTab(existingNoteDataIndex)
+                        g.pdm.showTab(existingNoteDataIndex,false)
                     } else {
                         
                         g.readingManager.downloadOnePage(url)

@@ -160,19 +160,19 @@ class ReadingManager {
             g.pdm.applyFontSizeToPresentationDivs()
 
             if (g.readingManager.isFullScreen) {
-                g.pdm.toggleFullScreen(true)
+                g.pdm.toggleFullScreen()
             }
                         
                         
                         
                         
 
-            g.pdm.showTab(g.readingManager.rightNotesData.length - 1)
+            g.pdm.showTab(g.readingManager.rightNotesData.length - 1,false)
 
             g.pdm.applyFontSizeToPresentationDivs()
 
             g.readingManager.addListenerToCurrentRightDoc()
-            g.readingManager.redrawAllFlinks()
+            g.readingManager.redrawAllFlinks(true, true)
 
                         
     
@@ -441,7 +441,7 @@ class ReadingManager {
     }
 
 
-    showTab = (index) => {
+    showTab = (index, fullRedraw) => {
 
 
         const currentNoteData = this.rightNotesData[this.selectedRightDocIndex]
@@ -513,7 +513,7 @@ class ReadingManager {
         
    
 
-        this.redrawAllFlinks()
+        this.redrawAllFlinks(fullRedraw)
 
     }
 
@@ -809,7 +809,11 @@ class ReadingManager {
                 const rightEnd = flink.rightEnds[0]
                 const {x,y,radius} = rightEnd
                 const collageViewer = noteObj.collageViewer
-                const {xRel, yRel} = collageViewer.getRelativePoint(x,y) 
+
+            
+                const relCoordinates = collageViewer.getRelativePoint(x,y) 
+                if(!relCoordinates)return
+                const {xRel, yRel} = relCoordinates
 
                 const isDotVisible = isDotInsideFrame(xRel,yRel,{minX:0,minY:0,maxX:collageViewer.viewport.w,maxY:collageViewer.viewport.h})
 
@@ -914,7 +918,9 @@ class ReadingManager {
     
                 const collageViewer = g.readingManager.mainCollageViewer
     
-                const {xRel, yRel} = collageViewer.getRelativePoint(x,y) 
+                const relCoordinates = collageViewer.getRelativePoint(x,y) 
+                if(!relCoordinates)return
+                const {xRel, yRel} = relCoordinates 
     
                 const isDotVisible = isDotInsideFrame(xRel,yRel,{minX:0,minY:0,maxX:collageViewer.viewport.w,maxY:collageViewer.viewport.h})
     
@@ -1011,7 +1017,9 @@ class ReadingManager {
     
                 const collageViewer = g.readingManager.mainCollageViewer
     
-                const {xRel, yRel} = collageViewer.getRelativePoint(x,y) 
+                 const relCoordinates = collageViewer.getRelativePoint(x,y) 
+                if(!relCoordinates)return
+                const {xRel, yRel} = relCoordinates 
     
                 const isDotVisible = isDotInsideFrame(xRel,yRel,{minX:0,minY:0,maxX:collageViewer.viewport.w,maxY:collageViewer.viewport.h})
     
@@ -1085,7 +1093,7 @@ class ReadingManager {
 
             tabsContainerDiv.appendChild(tabDiv)
             const currentIndex = i            
-            tabDiv.addEventListener('click',() => g.pdm.showTab(currentIndex))
+            tabDiv.addEventListener('click',() => g.pdm.showTab(currentIndex,false))
 
             g.readingManager.rightTabDivs.push(tabDiv)
 
@@ -1126,41 +1134,49 @@ class ReadingManager {
     }
 
 
-    redrawAllFlinks = () => {
+    redrawAllFlinks = async (fullRedraw = true, keepRightHighlights = false) => {
 
-        this.removeFlinksFromMainDiv()
-        this.removeFlinksFromRightDiv()
+        if(fullRedraw){
+            this.removeFlinksFromMainDiv()
+            if(!keepRightHighlights)this.removeFlinksFromRightDiv()
+        }
 
-        if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
-
-
-        if (g.readingManager.isFullScreen || g.pdm.isOkToShowFlinks()) {
-            this.checkIfFlinksAreBroken()
-            this.prepareLeftLinks()
+        setTimeout(() => {
+            if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
     
-            this.addFlinksToLeftDiv()
-            
-        }
-
-        if (!g.pdm.isOkToShowFlinks()) {
-            this.removeFlinksFromMiddleCanvas() 
-            return
-        }
-
-
     
 
-        if (!this.isFullScreen) {
-            this.checkIfFlinksAreBroken()
-            this.fixRightFlinksAutomaticallyIfNeeded()
-            this.prepareRightLinks()
-            this.addFlinksToRightDiv()
-
-        }
-
-        g.pdm.showMiddleCanvas()
-        this.drawFlinksOnMiddleCanvas() 
+            if (g.readingManager.isFullScreen || g.pdm.isOkToShowFlinks()) {
+                this.checkIfFlinksAreBroken()
+                this.prepareLeftLinks()
         
+                if(fullRedraw){
+                    this.addFlinksToLeftDiv()
+                }
+                
+            }
+    
+            if (!g.pdm.isOkToShowFlinks()) {
+                this.removeFlinksFromMiddleCanvas() 
+                return
+            }
+    
+    
+        
+    
+            if (!this.isFullScreen && fullRedraw) {
+                this.checkIfFlinksAreBroken()
+                this.fixRightFlinksAutomaticallyIfNeeded()
+                this.prepareRightLinks()
+                this.addFlinksToRightDiv()
+    
+            }
+    
+            g.pdm.showMiddleCanvas()
+            this.drawFlinksOnMiddleCanvas() 
+            
+
+        },0)
 
 
     }
@@ -1893,7 +1909,9 @@ class ReadingManager {
                     const leftEnd = flink.leftEnds[0]
                     const {x:dotAbsX,y:dotAbsY,radius} = leftEnd
                     const collageViewer = this.mainCollageViewer
-                    const {xRel, yRel} = collageViewer.getRelativePoint(dotAbsX,dotAbsY)
+                     const relCoordinates = collageViewer.getRelativePoint(dotAbsX,dotAbsY) 
+                    if(!relCoordinates)continue
+                    const {xRel, yRel} = relCoordinates
                     const distance = Math.sqrt(Math.pow(xRel - x, 2) + Math.pow(yRel - y, 2))
                     if(distance < Math.min(radius * collageViewer.k,10)){
                         
@@ -1921,7 +1939,7 @@ class ReadingManager {
                         }else if(noteData.docType === 'h'){
 
                             if(this.selectedRightDocIndex !== noteDataIndex){
-                                g.pdm.showTab(noteDataIndex)
+                                g.pdm.showTab(noteDataIndex,false)
                             }
 
                             const rightDotTopPanelHeight = g.pdm.getRightDocTopOffset(noteData)
@@ -2003,7 +2021,7 @@ class ReadingManager {
                 if (noteData.docType === 'c') {
 
                     if(this.selectedRightDocIndex !== noteDataIndex){
-                        g.pdm.showTab(noteDataIndex)
+                        g.pdm.showTab(noteDataIndex,false)
                     }
 
                     this.moveRightCollageInPositionForLink(flink,mainScrollDocDiv.scrollTop, topPanelHeight)
@@ -2013,7 +2031,7 @@ class ReadingManager {
                 
 
                     if(this.selectedRightDocIndex !== noteDataIndex){
-                        g.pdm.showTab(noteDataIndex)
+                        g.pdm.showTab(noteDataIndex,false)
                     }
 
                     const secondScrollDiv = noteData.scrollDiv
@@ -2051,7 +2069,9 @@ class ReadingManager {
                 const rightEnd = flink.rightEnds[0]
                 const {x:dotAbsX,y:dotAbsY,radius} = rightEnd
                 const collageViewer = noteData.collageViewer
-                const {xRel, yRel} = collageViewer.getRelativePoint(dotAbsX,dotAbsY)
+                 const relCoordinates = collageViewer.getRelativePoint(dotAbsX,dotAbsY) 
+                if(!relCoordinates)return
+                const {xRel, yRel} = relCoordinates
                 const distance = Math.sqrt(Math.pow(xRel - x,2) + Math.pow(yRel - y,2))
                 if(distance < Math.min(radius * collageViewer.k,10)){
                 

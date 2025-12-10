@@ -643,6 +643,7 @@ class CollageViewer{
 
 
     drawPartialLink(){
+        if(!this.viewport || !this.viewport.origin)return
         let x
         let y
         let radius
@@ -665,7 +666,9 @@ class CollageViewer{
         }
 
 
-        const {xRel, yRel} = this.getRelativePoint(x,y) 
+         const relCoordinates = this.getRelativePoint(x,y) 
+        if(!relCoordinates)return
+        const {xRel, yRel} = relCoordinates
 
         this.ctx.beginPath()
         this.ctx.arc(xRel, yRel, radius * this.k , 0, 2 * Math.PI);
@@ -697,6 +700,7 @@ class CollageViewer{
     }
 
     getRelativePoint(x, y){
+        if(!this.viewport || !this.viewport.origin)return null
         const xRel = (x - this.viewport.origin.x) * this.k - this.canvas.scrollLeft
     
         const yRel = (y - this.viewport.origin.y) * this.k - this.canvas.scrollTop
@@ -783,6 +787,7 @@ class CollageViewer{
     }
     onMouseDown = (e) => {
         if (e.button !== 0) return
+        if(!this.viewport || !this.viewport.origin)return
         const mouseX = e.pageX - this.leftX
         const mouseY = e.pageY - this.topY
 

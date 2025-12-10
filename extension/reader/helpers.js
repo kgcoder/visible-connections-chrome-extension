@@ -374,8 +374,8 @@ export function sanitizeHtml(htmlString, additionalForbiddenTags = []) {
     const clean = DOMPurify.sanitize(htmlString,{
         ALLOWED_TAGS: allowedTags,   // allow all tags (except obviously unsafe ones)
         ALLOWED_ATTR: false,   // allow all safe attributes
-         ADD_TAGS: ['iframe'],  // explicitly allow <iframe>
-        ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'height', 'width', 'referrerpolicy', 'loading', 'href', 'class', 'id'],
+        ADD_TAGS: ['iframe'],  // explicitly allow <iframe>
+        ADD_ATTR: ['target','allow', 'allowfullscreen', 'frameborder', 'src', 'height', 'width', 'referrerpolicy', 'loading', 'href', 'class', 'id'],
     });
 
 

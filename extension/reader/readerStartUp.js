@@ -24,7 +24,7 @@ window.addEventListener("message", (event) => {
         if (msg.type === "FLINK_THICKNESS_UPDATED") {
             const useThickLinks = msg.useThickLinks
             g.readingManager.flinkStyle = useThickLinks ? 'thick' : 'thin'
-            g.readingManager.redrawAllFlinks()
+            g.readingManager.redrawAllFlinks(false)
 
       }
 });

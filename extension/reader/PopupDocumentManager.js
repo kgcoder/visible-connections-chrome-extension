@@ -366,8 +366,8 @@ class PopupDocumentManager{
 
 
 
-    showTab = (index) => {
-        g.readingManager.showTab(index)
+    showTab = (index, fullRedraw = true) => {
+        g.readingManager.showTab(index, fullRedraw)
 
 
         const fullScreenButton = document.getElementById("CurrentDocumentFullScreenButton")
@@ -1422,14 +1422,14 @@ class PopupDocumentManager{
 
 
 
-    toggleFullScreen(dontRedrawFlinks = false){
+    async toggleFullScreen(){
         g.readingManager.isFullScreen = !g.readingManager.isFullScreen
 
-        
+        await new Promise(requestAnimationFrame);
         this.updateDocumentWidth()
-  
 
         this.updateConnectedDocumentsVisibility()
+
 
 
         this.centerAllCollages()
@@ -1442,11 +1442,6 @@ class PopupDocumentManager{
         if (this.isFlinksListOpen) {
             this.closeFlinksList()
         }
-
-        if (!dontRedrawFlinks) {
-            g.readingManager.redrawAllFlinks() 
-        }
-     
 
     }
 
@@ -1660,10 +1655,14 @@ class PopupDocumentManager{
             this.hideMiddleCanvas()
 
          //   g.readingManager.removeFlinksFromMainDiv()
-            g.readingManager.removeFlinksFromRightDiv()
+          //  g.readingManager.removeFlinksFromRightDiv()
         }
 
+       
         g.readingManager.redrawAllFlinks()
+
+    
+  
 
     }
 
