@@ -42,7 +42,16 @@ window.onresize = () => {
     columns.forEach(columnDiv => {
         columnDiv.style.width = `${g.readingManager.docWidth}px`
     })
-    g.readingManager.redrawAllFlinks()
+
+    g.readingManager.removeFlinksFromMainDiv()
+    g.readingManager.applyFlinksOnTheLeft()
+
+    g.readingManager.removeFlinksFromRightDiv()
+    g.readingManager.applyFlinksOnTheRight()
+
+    g.readingManager.redrawFlinks()
+
+
     g.readingManager.redrawAllTabs()
     if (g.pdm.isFlinksListOpen) {
         g.pdm.toggleFlinksList()
@@ -269,7 +278,15 @@ class PopupDocumentManager{
             e.stopPropagation()
             g.readingManager.revertToOriginalFlinks()
             this.openFlinksList()
-            g.readingManager.redrawAllFlinks()
+            //g.readingManager.redrawAllFlinks()
+
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
+
+         //   g.readingManager.redrawFlinks()
 
             this.updateCurrentDocExportButton()
         })
@@ -331,7 +348,14 @@ class PopupDocumentManager{
    
         this.applyFontSizeToPresentationDivs()
 
-        g.readingManager.redrawAllFlinks()
+
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
+
+        g.readingManager.removeFlinksFromRightDiv()
+        g.readingManager.applyFlinksOnTheRight()
+
+        g.readingManager.redrawFlinks()
 
         if(diff != 0){
             showToastMessage(`Font size: ${this.fontSize}${this.fontSize === 18 ? ' (default)' : ''}`)
@@ -563,7 +587,7 @@ class PopupDocumentManager{
             g.readingManager.drawFlinksOnTheLeftOnly()  
         
             if (!g.readingManager.isFullScreen) {
-                g.readingManager.reapplyFlinksOnTheRight()
+                g.readingManager.applyFlinksOnTheRight()
                 g.readingManager.redrawFlinks() 
             }
         },10)
@@ -699,7 +723,7 @@ class PopupDocumentManager{
             g.readingManager.drawFlinksOnTheLeftOnly()  
          
             if (!g.readingManager.isFullScreen) {
-                g.readingManager.reapplyFlinksOnTheRight()
+                g.readingManager.applyFlinksOnTheRight()
                 g.readingManager.redrawFlinks() 
             }
 
@@ -1437,6 +1461,12 @@ class PopupDocumentManager{
         this.updateConnectedDocumentsVisibility()
 
 
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
+        g.readingManager.redrawFlinks()
+
+
+
 
         this.centerAllCollages()
 
@@ -1534,6 +1564,10 @@ class PopupDocumentManager{
     infoButtonPressed = (e) => {
         e.stopPropagation()
         this.toggleInfo()
+        if(g.readingManager.areLeftFlinksPositionedForFullscreen !== this.isFullScreen){
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+        }
         //this.updateConnectedDocumentsVisibility()
     }
 
@@ -1665,7 +1699,7 @@ class PopupDocumentManager{
         }
 
        
-        g.readingManager.redrawAllFlinks()
+       // g.readingManager.redrawAllFlinks()
 
     
   
@@ -2118,7 +2152,12 @@ class PopupDocumentManager{
    
         this.updateLeftDocumentPanels()
       
-        g.readingManager.redrawAllFlinks()   
+        //g.readingManager.redrawAllFlinks()   
+
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
+
+       // g.readingManager.redrawFlinks()
         
     }
     
@@ -2148,7 +2187,12 @@ class PopupDocumentManager{
         }
 
         this.updateLeftDocumentPanels() 
-        g.readingManager.redrawAllFlinks()
+        //g.readingManager.redrawAllFlinks()
+
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
+
+       // g.readingManager.redrawFlinks()
     }
 
     rightDocumentLeftPanelButtonPressed = () => {
@@ -2174,7 +2218,12 @@ class PopupDocumentManager{
         }
    
         this.updateRightDocumentPanels(noteData)
-        g.readingManager.redrawAllFlinks()
+        //g.readingManager.redrawAllFlinks()
+
+        g.readingManager.removeFlinksFromRightDiv()
+        g.readingManager.applyFlinksOnTheRight()
+
+       // g.readingManager.redrawFlinks()
     }
     
     rightDocumentRightPanelButtonPressed = () => {
@@ -2199,7 +2248,12 @@ class PopupDocumentManager{
         }
 
         this.updateRightDocumentPanels(noteData) 
-        g.readingManager.redrawAllFlinks()
+        //g.readingManager.redrawAllFlinks()
+
+        g.readingManager.removeFlinksFromRightDiv()
+        g.readingManager.applyFlinksOnTheRight()
+
+       // g.readingManager.redrawFlinks()
     }
 
     cleanCommentsDiv(commentsDiv, listnersOwner) {

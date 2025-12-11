@@ -41,6 +41,8 @@ class ReadingManager {
     rightMainRowDivs = []
     rightTabDivs = []
 
+    areLeftFlinksPositionedForFullscreen = true
+
     leftScrollTimeout = null
     rightScrollTimeout = null
     
@@ -173,8 +175,8 @@ class ReadingManager {
 
             g.readingManager.addListenerToCurrentRightDoc()
 
-            g.readingManager.reapplyFlinksOnTheRight()
-            g.readingManager.redrawFlinks()
+            g.readingManager.applyFlinksOnTheRight()
+           // g.readingManager.redrawFlinks()
            // g.readingManager.redrawAllFlinks(true, true)
 
                         
@@ -516,7 +518,7 @@ class ReadingManager {
         
    
 
-        this.redrawAllFlinks(fullRedraw)
+        //this.redrawAllFlinks(fullRedraw)
 
     }
 
@@ -1096,7 +1098,10 @@ class ReadingManager {
 
             tabsContainerDiv.appendChild(tabDiv)
             const currentIndex = i            
-            tabDiv.addEventListener('click',() => g.pdm.showTab(currentIndex,false))
+            tabDiv.addEventListener('click',() => {
+                g.pdm.showTab(currentIndex,false)
+                g.readingManager.redrawFlinks()
+            })
 
             g.readingManager.rightTabDivs.push(tabDiv)
 
@@ -1137,8 +1142,8 @@ class ReadingManager {
     }
 
 
-    reapplyFlinksOnTheLeft(){
-        this.removeFlinksFromMainDiv()
+    applyFlinksOnTheLeft(){
+       // this.removeFlinksFromMainDiv()
 
         setTimeout(() => {
             if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
@@ -1147,13 +1152,16 @@ class ReadingManager {
                 this.checkIfFlinksAreBroken()
                 this.prepareLeftLinks()
                 this.addFlinksToLeftDiv()  
+
+                this.redrawFlinks()
             }
 
         },0)
     }
 
-    reapplyFlinksOnTheRight(){
-        this.removeFlinksFromRightDiv()
+    applyFlinksOnTheRight(){
+        console.error('applyFlinksOnTheRight')
+       // this.removeFlinksFromRightDiv()
 
         setTimeout(() => {
             if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
@@ -1163,6 +1171,8 @@ class ReadingManager {
                 this.fixRightFlinksAutomaticallyIfNeeded()
                 this.prepareRightLinks()
                 this.addFlinksToRightDiv()
+
+                this.redrawFlinks()
             }
 
         },0)
@@ -1178,6 +1188,7 @@ class ReadingManager {
 
     redrawAllFlinks = async (fullRedraw = true, keepRightHighlights = false) => {
 
+        console.error('redrawAllFlinks')
         fullRedraw = true
         if(fullRedraw){
             this.removeFlinksFromMainDiv()
@@ -1523,6 +1534,8 @@ class ReadingManager {
             }
          
         }
+
+        this.areLeftFlinksPositionedForFullscreen = this.isFullScreen
     }
 
 

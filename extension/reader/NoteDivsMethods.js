@@ -264,15 +264,16 @@ class NoteDivsManager{
         placeholder.appendChild(newIframe);
 
         if(isRight){
-            g.readingManager.reapplyFlinksOnTheRight()
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
         }else{
-            g.readingManager.reapplyFlinksOnTheLeft()
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
         }
 
         g.readingManager.redrawFlinks()
             
             
-          //  g.readingManager.redrawAllFlinks()
         });
       
         placeholder.appendChild(button);
