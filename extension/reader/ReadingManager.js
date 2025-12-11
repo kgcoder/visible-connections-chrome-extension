@@ -172,7 +172,10 @@ class ReadingManager {
             g.pdm.applyFontSizeToPresentationDivs()
 
             g.readingManager.addListenerToCurrentRightDoc()
-            g.readingManager.redrawAllFlinks(true, true)
+
+            g.readingManager.reapplyFlinksOnTheRight()
+            g.readingManager.redrawFlinks()
+           // g.readingManager.redrawAllFlinks(true, true)
 
                         
     
@@ -1134,8 +1137,48 @@ class ReadingManager {
     }
 
 
+    reapplyFlinksOnTheLeft(){
+        this.removeFlinksFromMainDiv()
+
+        setTimeout(() => {
+            if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
+
+            if (g.readingManager.isFullScreen || g.pdm.isOkToShowFlinks()) {
+                this.checkIfFlinksAreBroken()
+                this.prepareLeftLinks()
+                this.addFlinksToLeftDiv()  
+            }
+
+        },0)
+    }
+
+    reapplyFlinksOnTheRight(){
+        this.removeFlinksFromRightDiv()
+
+        setTimeout(() => {
+            if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
+
+            if (!this.isFullScreen) {
+                this.checkIfFlinksAreBroken()
+                this.fixRightFlinksAutomaticallyIfNeeded()
+                this.prepareRightLinks()
+                this.addFlinksToRightDiv()
+            }
+
+        },0)
+        
+    }
+
+
+    redrawFlinks(){
+        g.pdm.showMiddleCanvas()
+        this.drawFlinksOnMiddleCanvas() 
+    }
+
+
     redrawAllFlinks = async (fullRedraw = true, keepRightHighlights = false) => {
 
+        fullRedraw = true
         if(fullRedraw){
             this.removeFlinksFromMainDiv()
             if(!keepRightHighlights)this.removeFlinksFromRightDiv()

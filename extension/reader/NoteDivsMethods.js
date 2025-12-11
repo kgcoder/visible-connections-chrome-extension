@@ -101,7 +101,7 @@ class NoteDivsManager{
         const iframes = notePresentationDiv.querySelectorAll('iframe')
         
         iframes.forEach(iframe => {
-            const placeholder = this.createIframePlaceholder(iframe);
+            const placeholder = this.createIframePlaceholder(iframe,isRight);
             iframe.parentNode.replaceChild(placeholder, iframe);
         });
 
@@ -179,15 +179,14 @@ class NoteDivsManager{
 
 
 
-    createIframePlaceholder(iframe,textColumnWidth = 0) {
+    createIframePlaceholder(iframe,isRight = false) {
       
         const allowsFullscreen = iframe.hasAttribute("allowfullscreen");
         const placeholder = document.createElement('div');
         placeholder.className = 'iframe-placeholder';
 
-        if (!textColumnWidth) {
-            textColumnWidth = getTextColumnWidth()
-        }
+        const textColumnWidth = getTextColumnWidth()
+        
         
 
 
@@ -262,9 +261,18 @@ class NoteDivsManager{
       
 
           placeholder.innerHTML = '';
-            placeholder.appendChild(newIframe);
+        placeholder.appendChild(newIframe);
+
+        if(isRight){
+            g.readingManager.reapplyFlinksOnTheRight()
+        }else{
+            g.readingManager.reapplyFlinksOnTheLeft()
+        }
+
+        g.readingManager.redrawFlinks()
             
-            g.readingManager.redrawAllFlinks()
+            
+          //  g.readingManager.redrawAllFlinks()
         });
       
         placeholder.appendChild(button);

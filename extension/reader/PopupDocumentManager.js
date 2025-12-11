@@ -563,7 +563,8 @@ class PopupDocumentManager{
             g.readingManager.drawFlinksOnTheLeftOnly()  
         
             if (!g.readingManager.isFullScreen) {
-                g.readingManager.redrawAllFlinks() 
+                g.readingManager.reapplyFlinksOnTheRight()
+                g.readingManager.redrawFlinks() 
             }
         },10)
 
@@ -698,7 +699,8 @@ class PopupDocumentManager{
             g.readingManager.drawFlinksOnTheLeftOnly()  
          
             if (!g.readingManager.isFullScreen) {
-                g.readingManager.redrawAllFlinks() 
+                g.readingManager.reapplyFlinksOnTheRight()
+                g.readingManager.redrawFlinks() 
             }
 
         },10)
@@ -1252,14 +1254,14 @@ class PopupDocumentManager{
     exportButtonPressed = (e) => {
         e.stopPropagation()
         this.toggleExport()
-        this.updateConnectedDocumentsVisibility()
+       // this.updateConnectedDocumentsVisibility()
        
     }
 
     sourceCodeButtonPressed = (e) => {
         e.stopPropagation()
         this.toggleSourceCode()
-        this.updateConnectedDocumentsVisibility()
+       // this.updateConnectedDocumentsVisibility()
        
     }
 
@@ -1340,6 +1342,8 @@ class PopupDocumentManager{
         const exportDivConatiner = document.getElementById("CurrentDocumentExportContainer")
         exportDivConatiner.style.display = this.isLeftExporting ? 'flex' : 'none'
 
+        g.readingManager.redrawFlinks()
+
         if(this.isLeftExporting){
 
             if(g.readingManager.mainDocType === 'h'){
@@ -1388,7 +1392,9 @@ class PopupDocumentManager{
       
         }
 
-        g.readingManager.redrawAllFlinks()
+        g.readingManager.redrawFlinks()
+
+       // g.readingManager.redrawAllFlinks()
    
     }
 
@@ -1417,7 +1423,7 @@ class PopupDocumentManager{
 
             
         }
-        g.readingManager.redrawAllFlinks()
+        g.readingManager.redrawFlinks()
     }
 
 
@@ -1528,7 +1534,7 @@ class PopupDocumentManager{
     infoButtonPressed = (e) => {
         e.stopPropagation()
         this.toggleInfo()
-        this.updateConnectedDocumentsVisibility()
+        //this.updateConnectedDocumentsVisibility()
     }
 
     toggleInfo = (dontCloseOthers = false) => {
@@ -1583,7 +1589,7 @@ class PopupDocumentManager{
             this.infoManager.renderData()
         }
    
-        g.readingManager.redrawAllFlinks()
+        g.readingManager.redrawFlinks()
         
     }
 
@@ -1711,101 +1717,7 @@ class PopupDocumentManager{
 
     }
 
-    // showMiddleArrow(){
-    //     const svg = document.getElementById("svgArrow")
-    //     removeAllChildren(svg)
 
-    //     const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
-        
-
-    //     const color = noteData.line.color
-
-    //     if(noteData.inverted){
-    //         svg.innerHTML = `<path d="M0 6L10 0.226497V11.7735L0 6ZM28 7L9 7V5L28 5V7Z" fill="${color}"/>`
-    //     }else{
-    //         svg.innerHTML = `<path d="M28 6L18 0.226497V11.7735L28 6ZM0 7L19 7V5L0 5L0 7Z" fill="${color}"/>`
-
-    //     }
-
-    //     const listOpenButton = document.getElementById("LinksOpenButton")
-    //     const twoCollages = g.readingManager.mainCollageViewer && noteData.collageViewer
-    //     listOpenButton.style.display = noteData.links && noteData.links.length && !twoCollages && !this.isShowingInfo && !this.isLeftSourceCodeShowing && !this.isLeftExporting ? 'flex' : 'none'
-
-    //     svg.addEventListener('click',this.arrowButtonPressed)
-    // }
-
-
-    arrowButtonPressed = async (e) => {
-        e.stopPropagation()
-        
-        const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
-        
-
-        g.readingManager.selectedRightDocIndex = 0
-        const nextRightDocId = g.readingManager.mainDocId
-        const nextRightDocType = g.readingManager.mainDocType
-
-        let nextLeftScrollTop = null
-        let nextLeftCollageInfo = null
-        if(noteData.docType === 'h'){
-            nextLeftScrollTop = noteData.scrollDiv.scrollTop
-        }else if(noteData.docType === 'c'){
-            const collageViewer = noteData.collageViewer
-            const viewport = collageViewer.viewport
-            nextLeftCollageInfo = {x:viewport.origin.x,y:viewport.origin.y,k:collageViewer.k}
-        }
-
-
-        let nextRightScrollTop = null
-        let nextRightCollageInfo = null
-        if(nextRightDocType === 'h'){
-            const scrollDiv = document.getElementById("CurrentDocument")
-            nextRightScrollTop = scrollDiv.scrollTop
-        }else if(nextRightDocType === 'c'){
-            const collageViewer = g.readingManager.mainCollageViewer
-            const viewport = collageViewer.viewport
-            nextRightCollageInfo = {x:viewport.origin.x,y:viewport.origin.y,k:collageViewer.k}
-        }
-        
-        
-    
-  
-
-        g.readingManager.isViewingConnectedDocuments = true
-        this.updateConnectedDocumentsVisibility()
-
-        let index = g.readingManager.rightNotesData.findIndex(item => {
-            return item.docId == nextRightDocId && item.docType === nextRightDocType
-        })
-
-        if(index < 0)index = 0
-
-        this.showTab(index)
-
-  
-        if(nextLeftScrollTop !== null){
-            const scrollDiv = document.getElementById("CurrentDocument")
-            scrollDiv.scrollTop = nextLeftScrollTop
-        }
-
-        if(nextLeftCollageInfo !== null){
-            const {x,y,k} = nextLeftCollageInfo
-            g.readingManager.mainCollageViewer.updateViewport(x,y,k)
-           
-        }
-
-        if(nextRightScrollTop !== null){
-            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
-            noteData.scrollDiv.scrollTop = nextRightScrollTop 
-        }
-
-        if(nextRightCollageInfo !== null){
-            const {x,y,k} = nextRightCollageInfo
-            const noteData = g.readingManager.rightNotesData[g.readingManager.selectedRightDocIndex]
-            noteData.collageViewer.updateViewport(x,y,k)
-        } 
-
-    }
 
     hideMiddleCanvas(){
         if(g.flinksCanvas){
