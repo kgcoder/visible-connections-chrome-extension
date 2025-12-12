@@ -176,13 +176,6 @@ class ReadingManager {
             g.readingManager.addListenerToCurrentRightDoc()
 
             g.readingManager.applyFlinksOnTheRight()
-           // g.readingManager.redrawFlinks()
-           // g.readingManager.redrawAllFlinks(true, true)
-
-                        
-    
-
-            //   g.readingManager.addFlinksToNewRightDoc()
 
             g.pdm.configureConnectionsCountOnInfoButton()
 
@@ -517,9 +510,6 @@ class ReadingManager {
         this.changesInReadingModeExist = true
         
    
-
-        //this.redrawAllFlinks(fullRedraw)
-
     }
 
     removeFlinksFromMiddleCanvas() {
@@ -1138,12 +1128,18 @@ class ReadingManager {
 
     imageJustLoaded() {
         clearTimeout(this.imageLoadingTimer)
-        this.imageLoadingTimer = setTimeout(g.readingManager.redrawAllFlinks,500)
+        this.imageLoadingTimer = setTimeout(() =>{ 
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
+        },500)
     }
 
 
     applyFlinksOnTheLeft(){
-       // this.removeFlinksFromMainDiv()
+        this.removeFlinksFromMainDiv()
 
         setTimeout(() => {
             if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
@@ -1160,7 +1156,6 @@ class ReadingManager {
     }
 
     applyFlinksOnTheRight(){
-        console.error('applyFlinksOnTheRight')
        // this.removeFlinksFromRightDiv()
 
         setTimeout(() => {
@@ -1186,54 +1181,6 @@ class ReadingManager {
     }
 
 
-    redrawAllFlinks = async (fullRedraw = true, keepRightHighlights = false) => {
-
-        console.error('redrawAllFlinks')
-        fullRedraw = true
-        if(fullRedraw){
-            this.removeFlinksFromMainDiv()
-            if(!keepRightHighlights)this.removeFlinksFromRightDiv()
-        }
-
-        setTimeout(() => {
-            if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
-    
-    
-
-            if (g.readingManager.isFullScreen || g.pdm.isOkToShowFlinks()) {
-                this.checkIfFlinksAreBroken()
-                this.prepareLeftLinks()
-        
-                if(fullRedraw){
-                    this.addFlinksToLeftDiv()
-                }
-                
-            }
-    
-            if (!g.pdm.isOkToShowFlinks()) {
-                this.removeFlinksFromMiddleCanvas() 
-                return
-            }
-    
-    
-        
-    
-            if (!this.isFullScreen && fullRedraw) {
-                this.checkIfFlinksAreBroken()
-                this.fixRightFlinksAutomaticallyIfNeeded()
-                this.prepareRightLinks()
-                this.addFlinksToRightDiv()
-    
-            }
-    
-            g.pdm.showMiddleCanvas()
-            this.drawFlinksOnMiddleCanvas() 
-            
-
-        },0)
-
-
-    }
 
 
 
@@ -2583,15 +2530,21 @@ class ReadingManager {
         const flinksetHasChanges = this.fixFlink(flink,leftText,rightText)
         
       
+        if(flinksetHasChanges){
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+    
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
+    
+            this.checkIfFlinksWereChangedOnTheLeftSide()
+            this.checkIfFlinksWereChangedOnTheRightSide()
+    
+    
+    
+           this.changesInReadingModeExist = true
 
-        this.redrawAllFlinks()
-
-        this.checkIfFlinksWereChangedOnTheLeftSide()
-        this.checkIfFlinksWereChangedOnTheRightSide()
-
-
-
-       this.changesInReadingModeExist = true
+        }
 
     }
 
@@ -2637,8 +2590,9 @@ class ReadingManager {
         }
 
 
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
 
-        this.redrawAllFlinks()
 
         this.changesInReadingModeExist = true
 
@@ -2679,7 +2633,11 @@ class ReadingManager {
         this.checkIfFlinksWereChangedOnTheRightSide()
     
 
-      this.redrawAllFlinks()
+        g.readingManager.removeFlinksFromMainDiv()
+        g.readingManager.applyFlinksOnTheLeft()
+
+        g.readingManager.removeFlinksFromRightDiv()
+        g.readingManager.applyFlinksOnTheRight()
 
        this.changesInReadingModeExist = true
 
@@ -2768,7 +2726,11 @@ class ReadingManager {
         flinksData.activeFlinks = flinksData.activeFlinks.filter(item => item !== flink)
 
         if(flinksData.activeFlinks.length < originalLength){
-            this.redrawAllFlinks()
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
         }
 
         this.checkIfFlinksWereChangedOnTheLeftSide()
@@ -2787,7 +2749,11 @@ class ReadingManager {
 
         if(flinksData.activeFlinks.length < originalLength){
             
-            this.redrawAllFlinks()
+            g.readingManager.removeFlinksFromMainDiv()
+            g.readingManager.applyFlinksOnTheLeft()
+
+            g.readingManager.removeFlinksFromRightDiv()
+            g.readingManager.applyFlinksOnTheRight()
   
         }
 

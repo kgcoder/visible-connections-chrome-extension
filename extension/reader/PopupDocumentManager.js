@@ -278,7 +278,6 @@ class PopupDocumentManager{
             e.stopPropagation()
             g.readingManager.revertToOriginalFlinks()
             this.openFlinksList()
-            //g.readingManager.redrawAllFlinks()
 
             g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
@@ -286,7 +285,6 @@ class PopupDocumentManager{
             g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
 
-         //   g.readingManager.redrawFlinks()
 
             this.updateCurrentDocExportButton()
         })
@@ -1417,8 +1415,6 @@ class PopupDocumentManager{
         }
 
         g.readingManager.redrawFlinks()
-
-       // g.readingManager.redrawAllFlinks()
    
     }
 
@@ -1463,7 +1459,6 @@ class PopupDocumentManager{
 
         g.readingManager.removeFlinksFromMainDiv()
         g.readingManager.applyFlinksOnTheLeft()
-        g.readingManager.redrawFlinks()
 
 
 
@@ -1699,7 +1694,6 @@ class PopupDocumentManager{
         }
 
        
-       // g.readingManager.redrawAllFlinks()
 
     
   
@@ -2152,12 +2146,10 @@ class PopupDocumentManager{
    
         this.updateLeftDocumentPanels()
       
-        //g.readingManager.redrawAllFlinks()   
 
         g.readingManager.removeFlinksFromMainDiv()
         g.readingManager.applyFlinksOnTheLeft()
 
-       // g.readingManager.redrawFlinks()
         
     }
     
@@ -2187,12 +2179,10 @@ class PopupDocumentManager{
         }
 
         this.updateLeftDocumentPanels() 
-        //g.readingManager.redrawAllFlinks()
 
         g.readingManager.removeFlinksFromMainDiv()
         g.readingManager.applyFlinksOnTheLeft()
 
-       // g.readingManager.redrawFlinks()
     }
 
     rightDocumentLeftPanelButtonPressed = () => {
@@ -2218,12 +2208,10 @@ class PopupDocumentManager{
         }
    
         this.updateRightDocumentPanels(noteData)
-        //g.readingManager.redrawAllFlinks()
 
         g.readingManager.removeFlinksFromRightDiv()
         g.readingManager.applyFlinksOnTheRight()
 
-       // g.readingManager.redrawFlinks()
     }
     
     rightDocumentRightPanelButtonPressed = () => {
@@ -2248,12 +2236,10 @@ class PopupDocumentManager{
         }
 
         this.updateRightDocumentPanels(noteData) 
-        //g.readingManager.redrawAllFlinks()
 
         g.readingManager.removeFlinksFromRightDiv()
         g.readingManager.applyFlinksOnTheRight()
 
-       // g.readingManager.redrawFlinks()
     }
 
     cleanCommentsDiv(commentsDiv, listnersOwner) {
