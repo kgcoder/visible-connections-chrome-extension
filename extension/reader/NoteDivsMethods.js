@@ -96,12 +96,17 @@ class NoteDivsManager{
             maxImageWidth = g.readingManager.docWidth - 20 - 30
         }
          
+
+        let flinksData = null
+        if(isRight){
+            flinksData = g.readingManager.connections.find(data => data.url === url)
+        }
          
          
         const iframes = notePresentationDiv.querySelectorAll('iframe')
         
         iframes.forEach(iframe => {
-            const placeholder = this.createIframePlaceholder(iframe,isRight);
+            const placeholder = this.createIframePlaceholder(iframe,flinksData);
             iframe.parentNode.replaceChild(placeholder, iframe);
         });
 
@@ -111,10 +116,6 @@ class NoteDivsManager{
          
          
 
-        let flinksData = null
-        if(isRight){
-            flinksData = g.readingManager.connections.find(data => data.url === url)
-        }
          
             
 
@@ -184,7 +185,7 @@ class NoteDivsManager{
 
 
 
-    createIframePlaceholder(iframe,isRight = false) {
+    createIframePlaceholder(iframe,flinksData) {
       
         const allowsFullscreen = iframe.hasAttribute("allowfullscreen");
         const placeholder = document.createElement('div');
@@ -268,8 +269,14 @@ class NoteDivsManager{
           placeholder.innerHTML = '';
         placeholder.appendChild(newIframe);
 
-        if(isRight){
-            g.readingManager.applyFlinksOnTheRight()
+        if(flinksData){
+
+            flinksData.flinksUpdateNeeded = true
+
+            if(g.readingManager.currentConnection === flinksData){
+                g.readingManager.applyFlinksOnTheRight()
+            }
+
         }else{
             g.readingManager.applyFlinksOnTheLeft()
         }
