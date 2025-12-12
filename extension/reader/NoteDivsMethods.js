@@ -110,6 +110,11 @@ class NoteDivsManager{
          
          
          
+
+        let flinksData = null
+        if(isRight){
+            flinksData = g.readingManager.connections.find(data => data.url === url)
+        }
          
             
 
@@ -128,8 +133,8 @@ class NoteDivsManager{
             image.style.height = 'auto'
 
 
-            image.onload = g.readingManager.imageJustLoaded
-            image.onerror = g.readingManager.imageJustLoaded
+            image.onload = () => g.readingManager.imageJustLoaded(flinksData)
+            image.onerror = () => g.readingManager.imageJustLoaded(flinksData)
 
         }
          
@@ -268,8 +273,6 @@ class NoteDivsManager{
         }else{
             g.readingManager.applyFlinksOnTheLeft()
         }
-
-        g.readingManager.redrawFlinks()
             
             
         });

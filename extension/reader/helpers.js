@@ -47,8 +47,6 @@ export async function setTheme(themeName, shouldSave = false) {
     g.readingManager.applyFlinksOnTheLeft()
 
     g.readingManager.applyFlinksOnTheRight()
-
-    g.readingManager.redrawFlinks()
      
 
 }

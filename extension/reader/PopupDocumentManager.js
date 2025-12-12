@@ -374,8 +374,8 @@ class PopupDocumentManager{
 
 
 
-    showTab = (index, fullRedraw = true) => {
-        g.readingManager.showTab(index, fullRedraw)
+    showTab = (index) => {
+        g.readingManager.showTab(index)
 
 
         const fullScreenButton = document.getElementById("CurrentDocumentFullScreenButton")

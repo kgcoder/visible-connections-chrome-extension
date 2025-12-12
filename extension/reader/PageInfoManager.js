@@ -140,6 +140,7 @@ class PageInfoManager {
     
                     if (existingNoteDataIndex !== -1) {
                         g.pdm.showTab(existingNoteDataIndex,false)
+                        g.readingManager.redrawFlinks()
                         
                     } else {
                         

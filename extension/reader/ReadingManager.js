@@ -169,7 +169,8 @@ class ReadingManager {
                         
                         
 
-            g.pdm.showTab(g.readingManager.rightNotesData.length - 1,false)
+            g.pdm.showTab(g.readingManager.rightNotesData.length - 1)
+            g.readingManager.redrawFlinks()
 
             g.pdm.applyFontSizeToPresentationDivs()
 
@@ -439,7 +440,7 @@ class ReadingManager {
     }
 
 
-    showTab = (index, fullRedraw) => {
+    showTab = (index) => {
 
 
         const currentNoteData = this.rightNotesData[this.selectedRightDocIndex]
@@ -485,6 +486,11 @@ class ReadingManager {
         
         const flinksData = this.connections.find(data => data.url === noteData.url)
         this.currentConnection = flinksData ? flinksData : ({flinks:[]}) //should never be empty
+
+
+        if(flinksData.flinksUpdateNeeded){
+            g.readingManager.applyFlinksOnTheRight()
+        }
 
         if(noteData.docType === 'h'){
             g.pdm.populatePanelsOfOneRightDoc()
@@ -1089,7 +1095,7 @@ class ReadingManager {
             tabsContainerDiv.appendChild(tabDiv)
             const currentIndex = i            
             tabDiv.addEventListener('click',() => {
-                g.pdm.showTab(currentIndex,false)
+                g.pdm.showTab(currentIndex)
                 g.readingManager.redrawFlinks()
             })
 
@@ -1126,11 +1132,18 @@ class ReadingManager {
     }
 
 
-    imageJustLoaded() {
+    imageJustLoaded(flinksData) {
         clearTimeout(this.imageLoadingTimer)
         this.imageLoadingTimer = setTimeout(() =>{ 
-            g.readingManager.applyFlinksOnTheLeft()
-            g.readingManager.applyFlinksOnTheRight()
+            if(!flinksData){
+                g.readingManager.applyFlinksOnTheLeft()
+            }else{
+                flinksData.flinksUpdateNeeded = true
+                if(g.readingManager.currentConnection === flinksData){
+                    g.readingManager.applyFlinksOnTheRight()
+                }
+            }
+
         },500)
     }
 
@@ -1165,6 +1178,9 @@ class ReadingManager {
                 this.addFlinksToRightDiv()
 
                 this.redrawFlinks()
+
+                const flinksData = g.readingManager.currentConnection
+                flinksData.flinksUpdateNeeded = false
             }
 
         },0)
@@ -1939,7 +1955,8 @@ class ReadingManager {
                         }else if(noteData.docType === 'h'){
 
                             if(this.selectedRightDocIndex !== noteDataIndex){
-                                g.pdm.showTab(noteDataIndex,false)
+                                g.pdm.showTab(noteDataIndex)
+                                g.readingManager.redrawFlinks()
                             }
 
                             const rightDotTopPanelHeight = g.pdm.getRightDocTopOffset(noteData)
@@ -2021,7 +2038,8 @@ class ReadingManager {
                 if (noteData.docType === 'c') {
 
                     if(this.selectedRightDocIndex !== noteDataIndex){
-                        g.pdm.showTab(noteDataIndex,false)
+                        g.pdm.showTab(noteDataIndex)
+                        g.readingManager.redrawFlinks()
                     }
 
                     this.moveRightCollageInPositionForLink(flink,mainScrollDocDiv.scrollTop, topPanelHeight)
@@ -2031,7 +2049,8 @@ class ReadingManager {
                 
 
                     if(this.selectedRightDocIndex !== noteDataIndex){
-                        g.pdm.showTab(noteDataIndex,false)
+                        g.pdm.showTab(noteDataIndex)
+                        g.readingManager.redrawFlinks()
                     }
 
                     const secondScrollDiv = noteData.scrollDiv
