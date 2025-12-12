@@ -264,10 +264,8 @@ class NoteDivsManager{
         placeholder.appendChild(newIframe);
 
         if(isRight){
-            g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
         }else{
-            g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
         }
 

@@ -175,7 +175,7 @@ class ReadingManager {
 
             g.readingManager.addListenerToCurrentRightDoc()
 
-            g.readingManager.applyFlinksOnTheRight()
+            g.readingManager.applyFlinksOnTheRight(false)
 
             g.pdm.configureConnectionsCountOnInfoButton()
 
@@ -1129,10 +1129,7 @@ class ReadingManager {
     imageJustLoaded() {
         clearTimeout(this.imageLoadingTimer)
         this.imageLoadingTimer = setTimeout(() =>{ 
-            g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
-
-            g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
         },500)
     }
@@ -1155,8 +1152,8 @@ class ReadingManager {
         },0)
     }
 
-    applyFlinksOnTheRight(){
-       // this.removeFlinksFromRightDiv()
+    applyFlinksOnTheRight(removeOldFlinks = true){
+        if(removeOldFlinks)this.removeFlinksFromRightDiv()
 
         setTimeout(() => {
             if(g.readingManager.mainDocData && g.readingManager.mainDocData.docType === 'condoc' && !g.readingManager.embeddedDocData)return
@@ -2531,16 +2528,11 @@ class ReadingManager {
         
       
         if(flinksetHasChanges){
-            g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
-    
-            g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
     
             this.checkIfFlinksWereChangedOnTheLeftSide()
             this.checkIfFlinksWereChangedOnTheRightSide()
-    
-    
     
            this.changesInReadingModeExist = true
 
@@ -2590,7 +2582,6 @@ class ReadingManager {
         }
 
 
-        g.readingManager.removeFlinksFromMainDiv()
         g.readingManager.applyFlinksOnTheLeft()
 
 
@@ -2633,10 +2624,7 @@ class ReadingManager {
         this.checkIfFlinksWereChangedOnTheRightSide()
     
 
-        g.readingManager.removeFlinksFromMainDiv()
         g.readingManager.applyFlinksOnTheLeft()
-
-        g.readingManager.removeFlinksFromRightDiv()
         g.readingManager.applyFlinksOnTheRight()
 
        this.changesInReadingModeExist = true
@@ -2726,10 +2714,7 @@ class ReadingManager {
         flinksData.activeFlinks = flinksData.activeFlinks.filter(item => item !== flink)
 
         if(flinksData.activeFlinks.length < originalLength){
-            g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
-
-            g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
         }
 
@@ -2748,13 +2733,8 @@ class ReadingManager {
         flinksData.activeFlinks = flinksData.activeFlinks.filter(item => !item.isSelected)
 
         if(flinksData.activeFlinks.length < originalLength){
-            
-            g.readingManager.removeFlinksFromMainDiv()
             g.readingManager.applyFlinksOnTheLeft()
-
-            g.readingManager.removeFlinksFromRightDiv()
             g.readingManager.applyFlinksOnTheRight()
-  
         }
 
         this.checkIfFlinksWereChangedOnTheLeftSide()

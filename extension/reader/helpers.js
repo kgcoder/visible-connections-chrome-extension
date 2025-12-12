@@ -44,10 +44,8 @@ export async function setTheme(themeName, shouldSave = false) {
         saveObjectInLocalStorage('theme',themeName)
     }
 
-    g.readingManager.removeFlinksFromMainDiv()
     g.readingManager.applyFlinksOnTheLeft()
 
-    g.readingManager.removeFlinksFromRightDiv()
     g.readingManager.applyFlinksOnTheRight()
 
     g.readingManager.redrawFlinks()
