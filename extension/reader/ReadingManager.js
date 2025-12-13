@@ -102,12 +102,15 @@ class ReadingManager {
     }
 
     removeFlinksFromRightDiv() {
-        const canvases = document.getElementsByClassName('rightDocFlinkCanvas')
-        while(canvases.length > 0) {
-            canvases[0].remove();  // Remove the first element repeatedly until none are left
-        }
-
         const noteData = this.rightNotesData[this.selectedRightDocIndex]
+        if(!noteData)return
+        const div = noteData.scrollDiv
+        if(!div)return
+        const presentationDiv = getPresentationDivFrom(div)
+        if(!presentationDiv)return
+        const canvases = presentationDiv.querySelectorAll('.rightDocFlinkCanvas')
+        canvases.forEach(canvas => canvas.remove())
+
 
         if(!noteData || noteData.docType !== 'h')return
 
