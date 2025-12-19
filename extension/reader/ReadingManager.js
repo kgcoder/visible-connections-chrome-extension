@@ -2628,7 +2628,6 @@ class ReadingManager {
 
         const {leftText,rightText} = this.getLeftAndRightTexts()
 
-
         const flinksData = this.connections.find(con => con.url === noteObj.url)
 
         if (!flinksData || !flinksData.activeFlinks) return
@@ -2697,10 +2696,15 @@ class ReadingManager {
         let result;
         const lengthWithin = originalHLength - 2
         if(lengthWithin < 0)return null
-        const reg = new RegExp(`${escapeRegExp(leftHLetter)}${lengthWithin > 0 ? `[\\s\\S]{${lengthWithin}}` : ''}${escapeRegExp(rightHLetter)}`,'g')
+     
+        const reg = new RegExp(
+        `(?=(${escapeRegExp(leftHLetter)}[\\s\\S]{${lengthWithin}}${escapeRegExp(rightHLetter)}))`,
+        'g'
+        );
+
         while ((result = reg.exec(text))) {
-            const matchedText = result[0] || ''
-            
+            const matchedText = result[1] || ''
+
             newStartHIndex = result.index
 
             const newHash = getShortHash(matchedText)
@@ -2710,6 +2714,8 @@ class ReadingManager {
                 hashSubstring = matchedText
                 break
             }
+
+            reg.lastIndex = result.index + 1;
             
         }
         
