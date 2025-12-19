@@ -10,7 +10,7 @@ For the official list of document types and specifications, see:
 https://github.com/kgcoder/default-web
 */
 
-import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getXMlAndDataArrayFromJSONConnections, removeTitleFromContent, sanitizeHtml, showToastMessage } from "../helpers.js"
+import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getXMlAndDataArrayFromJSONConnections, removeTitleFromContent, sanitizeHtml, showToastMessage, unescapeHTML } from "../helpers.js"
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
 
 
@@ -184,17 +184,17 @@ export function getHtmlPageWithHDocAndParseIt(httpPageUrl, contentString, hdocDa
             return null
         }
 
-        headerInfo.h1Text = mainTitle
+        headerInfo.h1Text = unescapeHTML(mainTitle)
 
         const authorName = headerJSON["author"] ?? ''
         const publicationDate = headerJSON["date"] ?? ''
 
         if (authorName) {
-            headerInfo.authorName = authorName
+            headerInfo.authorName = unescapeHTML(authorName)
         }
 
         if (publicationDate) {
-            headerInfo.publicationDate = publicationDate
+            headerInfo.publicationDate = unescapeHTML(publicationDate)
         }
         
     }
