@@ -162,4 +162,25 @@ html, body{
 }
 
 
+#right-page-url-container{
+    display: flex;
+    flex-direction: column;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+
+
+#right-doc-download-button-container{
+    display: flex;
+    flex:1;
+    gap:10px;
+
+}
+
+#right-doc-url-input{
+    display: flex;
+    flex:1;
+}
+
 

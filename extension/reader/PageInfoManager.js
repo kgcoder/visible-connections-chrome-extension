@@ -72,22 +72,22 @@ class PageInfoManager {
 
          }
 
-
-        if (connections && connections.length) {
-        
-            this.addTitle(infoDiv, 'Connected documents', 30)
-      
-
-
-
-            for (const desCon of connections) {
-                
-                desCon.title = unescapeHTML(desCon.title)
-
-                this.addLink(infoDiv, desCon.title, desCon.url)
+         if(connections){
+            const originalConnections = connections.filter(con => !!con.isOriginal)
+            if (originalConnections.length) {
+            
+                this.addTitle(infoDiv, 'Connected documents', 30)
+          
+                for (const desiredConnection of originalConnections) {
+                    
+                    desiredConnection.title = unescapeHTML(desiredConnection.title)
+    
+                    this.addLink(infoDiv, desiredConnection.title, desiredConnection.url)
+                }
+    
             }
+         }
 
-        }
 
 
 

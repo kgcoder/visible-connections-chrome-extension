@@ -105,6 +105,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     }else{
         const messageName = message.messageName
 
+        if(messageName === 'DownloadConnectedPage'){
+            const url = message.url
+            window.postMessage({ type: "DOWNLOAD_USER_SPECIFIED_PAGE", url },"*");
+        }
 
         if (messageName === 'ToggleThickLinks') {
             const useThickLinks = message.enabled
@@ -137,7 +141,8 @@ async function sendPageMetadata(sendResponse) {
 
     sendResponse({
         areLinksThick,
-        skipConfirmation
+        skipConfirmation,
+        isShowingReader
     })
 }
 

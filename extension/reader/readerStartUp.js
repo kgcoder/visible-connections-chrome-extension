@@ -27,6 +27,13 @@ window.addEventListener("message", (event) => {
             g.readingManager.redrawFlinks()
 
       }
+      if(msg.type === "DOWNLOAD_USER_SPECIFIED_PAGE"){
+
+            const url = msg.url
+
+            g.readingManager.downloadOnePage(url)
+
+      }
 });
 
 window.addEventListener('initReader', async (e) => {

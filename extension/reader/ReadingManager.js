@@ -150,14 +150,65 @@ class ReadingManager {
     downloadOnePage = async (url, hideSpinner = false) => {
         if(!hideSpinner)g.pdm.showMainDocSpinner()
         const dataObject = await loadStaticContentFromUrl(url)
-            
+
+        if(![1,2,3,5].includes(dataObject.docSubtype)){
+            showToastMessage("Unsupported document format")
+            if(!hideSpinner)g.pdm.hideMainDocSpinner()
+            return
+        }
     
         if (dataObject) {
             dataObject.docId = g.readingManager.rightNotesData.length
             g.readingManager.hideCurrentRightDoc()
             g.readingManager.rightNotesData.push(dataObject)
+            
+            let flinksData = g.readingManager.connections.find(con => con.url === url)
+            if(!flinksData){
 
-            const flinksData = g.readingManager.connections.find(con => con.url === url)
+                let title
+                let hash
+
+                
+
+                if(dataObject.docSubtype === 5){
+                    title = dataObject.title
+
+                    const svgMatch = dataObject.xmlString.match(/<svg\b[^>]*>[\s\S]*?<\/svg>/)
+                    if(svgMatch){
+                        const svgText = svgMatch[0]
+                        hash = getShortHash(svgText)
+                    }
+
+                }else{
+                    const headerInfo = dataObject.headerInfo
+                    title = headerInfo.h1Text
+
+                    const div = document.createElement('div')
+                    div.innerHTML = dataObject.html
+                    const text = div.textContent
+    
+           
+                    hash = getShortHash(text)
+                }
+                
+
+
+
+
+                flinksData = {
+                    url,
+                    title,
+                    flinks:[],
+                    activeFlinks:[],
+                    color:'red',
+                    hash
+
+                }
+
+                g.readingManager.connections.push(flinksData)
+
+                g.pdm.prepareConnectionsForDocument()
+            }
             g.readingManager.currentConnection = flinksData
                     
 
@@ -181,10 +232,10 @@ class ReadingManager {
 
             g.readingManager.applyFlinksOnTheRight(false)
 
-            g.pdm.configureConnectionsCountOnInfoButton()
+            const {total,count} = g.pdm.configureConnectionsCountOnInfoButton()
 
 
-            if (g.readingManager.connections.length === g.readingManager.rightNotesData.length) {
+            if (count === total) {
                 const downloadAllButton = document.getElementById("CurrentDocumentDownloadAllDocsButton")
                 downloadAllButton.style.display = 'none'
 

@@ -677,10 +677,7 @@ export function getConnectionsString(){
 
     if(!flinkSets.length)return ''
 
-    const xmlDoc = document.implementation.createDocument(null, 'connections', null)
-
-
-    
+    const xmlDoc = document.implementation.createDocument(null, 'connections', null)    
 
     for(let flinkSet of flinkSets){
     

@@ -33,7 +33,7 @@ function getPageMetadata() {
 
 
 function updatePageMetadata(response) {
-    const {areLinksThick,skipConfirmation} = response
+    const {areLinksThick,skipConfirmation,isShowingReader} = response
 
     const mainMenu = document.getElementById("mainMenu")
 
@@ -77,6 +77,22 @@ function updatePageMetadata(response) {
     dontAskWhenFetchingCheckbox.addEventListener('change', () => {
         sendMessageToPage({ messageName: 'SetFetchConfirmationPreference', skipConfirmation: dontAskWhenFetchingCheckbox.checked })
     })
+
+
+    if(isShowingReader){
+        const rightPageUrlContainer = document.getElementById("right-page-url-container")
+        rightPageUrlContainer.style.display = 'flex'
+
+        const button = document.getElementById("right-doc-download-button")
+
+
+        button.addEventListener('click', () => {
+            const input = document.getElementById("right-doc-url-input")
+            sendMessageToPage({ messageName: 'DownloadConnectedPage', url: input.value.trim() })
+        })
+
+    }
+
 
     
 

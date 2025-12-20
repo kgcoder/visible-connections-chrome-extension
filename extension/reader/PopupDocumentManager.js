@@ -724,8 +724,11 @@ class PopupDocumentManager{
 
 
     
-    prepareConnectionsForDocument(dataObject) {
-        g.readingManager.connections = dataObject.connectedDocsData
+    prepareConnectionsForDocument(dataObject = null) {
+        if(dataObject){
+            g.readingManager.connections = dataObject.connectedDocsData
+            g.readingManager.connections.forEach(con => con.isOriginal = true)
+        }
 
         let j = 0
         for (let i = 0; i < g.readingManager.connections.length; i++){
@@ -741,7 +744,7 @@ class PopupDocumentManager{
  
     configureConnectionsCountOnInfoButton() {
 
-        const connections = g.readingManager.connections
+        const connections = g.readingManager.connections.filter(con => !!con.isOriginal)
 
         let count = 0
 
