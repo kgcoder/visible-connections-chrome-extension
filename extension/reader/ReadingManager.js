@@ -151,6 +151,12 @@ class ReadingManager {
         if(!hideSpinner)g.pdm.showMainDocSpinner()
         const dataObject = await loadStaticContentFromUrl(url)
 
+        if(!dataObject){
+            showToastMessage("Something is wrong")
+            if(!hideSpinner)g.pdm.hideMainDocSpinner()
+            return
+        }
+
         if(![1,2,3,5].includes(dataObject.docSubtype)){
             showToastMessage("Unsupported document format")
             if(!hideSpinner)g.pdm.hideMainDocSpinner()

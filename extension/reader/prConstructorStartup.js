@@ -11,7 +11,7 @@ https://github.com/kgcoder/default-web
 */
 
 import g from "./Globals.js"
-import { getProtocolAndDomainFromUrl, removeTitleFromContent, replaceMediaTagsWithLinksInDiv, sanitizeHtml, setTheme } from "./helpers.js";
+import { copyDataToClipboard, getProtocolAndDomainFromUrl, removeTitleFromContent, replaceMediaTagsWithLinksInDiv, sanitizeHtml, setTheme, showToastMessage } from "./helpers.js";
 import IconsInfo from "./Icons.js";
 import { parseStaticContent } from "./parsers/ParsingManager.js";
 import { checkKey } from "./KeyboardManager.js";
@@ -97,12 +97,7 @@ const selectors = [
 ];
 
 
-window.addEventListener("message", (event) => {
-      if (event.source !== window) return;
-      const msg = event.data;
-  
-    
-});
+
 
 window.addEventListener('initParsingRulesConstructor', async (e) => {
     const { url, contentString, } = e.detail;
@@ -110,10 +105,15 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     originalUrl = url
     originalContentString = contentString
 
-    console.log('url',url)
-    console.log('contentString',contentString.slice(0,1000))
 
     loadUIAndIcons()
+
+    const copyUrlButton = document.getElementById("copy-url-button")
+    copyUrlButton.addEventListener('click',(e) => {
+        e.preventDefault()
+        copyDataToClipboard(finalUrl)
+        showToastMessage('URL was copied to clipboard')  
+    })
 
 
     const result = guessParsingRules()
@@ -171,8 +171,6 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
     contentSelectorNextGuessButton.addEventListener('click',(e) => {
         e.preventDefault()
-        console.log('content next guess')
-
 
         currentPossibleContentSelectorIndex++
         if(currentPossibleContentSelectorIndex >= possibleContentSelectors.length){
@@ -200,8 +198,6 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
     titleSelectorNextGuessButton.addEventListener('click',(e) => {
         e.preventDefault()
-        console.log('title next guess')
-    
 
         currentPossibleTitleSelectorIndex++
         if(currentPossibleTitleSelectorIndex >= possibleTitleSelectors.length){
@@ -215,9 +211,7 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
         const titleSelectorInput = document.getElementById("titleSelector")
         titleSelectorInput.value = possibleTitleSelectors[currentPossibleTitleSelectorIndex]
 
-
         constructFullUrl()
-
         renderPage()
     })
 
@@ -226,11 +220,8 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
     updateButton.addEventListener('click',(e) => {
         e.preventDefault()
-        console.log('update')
-
 
         constructFullUrl()
-
         renderPage()
     })
 
@@ -292,13 +283,9 @@ function constructFullUrl(){
 
     if (removalSelectors.length) {
         removedTagsURLPart = `/r/${removalSelectors.map(item=>encodeURIComponent(item)).join(',')}`
-
-        console.log('removalSelectors',removalSelectors)
     }
 
     finalUrl = `${originalUrl}#pr=c/${encodeURIComponent(contentSelector)}${titleURLPart}${removedTagsURLPart}${dateUrlPart}${authorUrlPart}`
-
-    console.log('finalUrl',finalUrl)
 
     const fullUrlSpan = document.getElementById("full-url-span")
     fullUrlSpan.innerText = finalUrl
@@ -381,9 +368,6 @@ function guessParsingRules(){
     }
 
 
-
-    console.log('selectorsThatWorked',selectorsThatWorked)
-
     return {isText:false,contentSelectors:selectorsThatWorked,titleSelectors:titleSelectorsThatWorked,additionalForbiddenTags}
 
 
@@ -393,9 +377,6 @@ function guessParsingRules(){
 
 function renderPage(){
 
-
-    console.log('render page')
-
     const [cleanUrl, configString] = finalUrl.split('#pr=')
 
     const urlInfo = getProtocolAndDomainFromUrl(cleanUrl)
@@ -404,7 +385,6 @@ function renderPage(){
         showToastMessage('Parsing error')
         return
     }
-        console.log('render page1',urlInfo)
 
 
     const {protocol, domain} = urlInfo
@@ -416,21 +396,14 @@ function renderPage(){
         return
     }
 
-        console.log('render page2',actions)
-
 
     const dataObject = parseHtmlStringWithConfig(originalContentString,configString,cleanUrl,protocol,domain,actions)
-
-        console.log('render page3',dataObject)
-
-
 
     if(!dataObject){
         showBlankPage()
         return
     }
 
-    console.log('parsed obj',dataObject)
 
     const pageDiv = document.getElementById("pageDiv")
    
@@ -448,9 +421,11 @@ function renderPage(){
         pageDiv.style.whiteSpace = ''
     }
 
-    console.log('html',dataObject.html)
 
-    fixImageWidths()
+
+    replaceMediaTagsWithLinksInDiv(pageDiv,'audio')
+    replaceMediaTagsWithLinksInDiv(pageDiv,'video')
+
 }
 
 
@@ -465,42 +440,3 @@ function showBlankPage(){
 
 
 
-function fixImageWidths(){
-    const pageDiv = document.getElementById("pageDiv")
-    const images = pageDiv.getElementsByTagName('img')
-
-
-        const docWidth = window.innerWidth - 300
-
-        let maxImageWidth = docWidth
-    
-     
-        replaceMediaTagsWithLinksInDiv(pageDiv,'audio')
-        replaceMediaTagsWithLinksInDiv(pageDiv,'video')
-         
-         
-         
-
-         
-            
-
-
-        for(let i = 0; i < images.length; i++){
-            const image = images.item(i)
-            
-            // console.log('image',image)
-            // image['data-width'] = image.width
-
-            // console.log('image.width',image.width)
-          
-
-            // if (image['data-width']) {
-            //     image.style.width =  Math.min(image['data-width'] , maxImageWidth) + 'px'  
-            // } else {
-            //     image.style.width = '100%'
-            // }
-            // image.style.height = 'auto'
-
-
-        }
-}

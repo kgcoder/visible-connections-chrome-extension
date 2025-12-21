@@ -873,3 +873,34 @@ export function getProtocolAndDomainFromUrl(url){
 
     return {protocol,domain}
 }
+
+
+export async function copyDataToClipboard(dataString){
+        try {
+            // Use clipboard API directly in popup (this will work)
+            await navigator.clipboard.writeText(dataString);
+        } catch (err) {
+            //console.error('Failed to copy to clipboard:', err);
+            // Fallback for older browsers
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = dataString;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    //console.log('Data copied to clipboard (fallback):', dataString);
+                } else {
+                    //console.error('Fallback copy method failed');
+                }
+            } catch (fallbackErr) {
+                //console.error('Both clipboard methods failed:', fallbackErr);
+            }
+        }
+    }

@@ -33,7 +33,7 @@ function getPageMetadata() {
 
 
 function updatePageMetadata(response) {
-    const {areLinksThick,skipConfirmation,isShowingReader, currentLocation} = response
+    const {areLinksThick,skipConfirmation,isShowingReader,isShowingParsingRulesConstructor, currentLocation} = response
 
     const mainMenu = document.getElementById("mainMenu")
 
@@ -91,17 +91,18 @@ function updatePageMetadata(response) {
             sendMessageToPage({ messageName: 'DownloadConnectedPage', url: input.value.trim() })
         })
 
+    }else if(!isShowingParsingRulesConstructor){
+        const openInPlaygroundButton = document.getElementById("open-in-playground-button")
+        openInPlaygroundButton.style.display = 'flex'
+        openInPlaygroundButton.addEventListener('click',() => {
+            sendMessageToPage({ messageName: 'OpenInParsingRulesConstructor' })
+    
+            window.close()
+        })
+
     }
 
 
-    const openInPlaygroundButton = document.getElementById("open-in-playground-button")
-    openInPlaygroundButton.addEventListener('click',() => {
-        // chrome.runtime.sendMessage({
-        //     action: "OpenInPlayground",
-        //     url: currentLocation
-        // });
-        sendMessageToPage({ messageName: 'OpenInPlayground' })
-    })
 
 
     

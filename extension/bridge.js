@@ -29,7 +29,13 @@ window.addEventListener("message", async (event) => {
     if (!isShowingReader) {
       return
     }
-    const hostname = new URL(url).hostname
+    let hostname
+    try{
+      hostname = new URL(url).hostname
+
+    }catch(e){
+      return
+    }
     
 
       if (!whitelistedHostnames.has(hostname) && !skipConfirmation) {

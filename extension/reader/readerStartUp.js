@@ -31,6 +31,8 @@ window.addEventListener("message", (event) => {
 
             const url = msg.url
 
+            if(!url || !url.trim())return
+
             g.readingManager.downloadOnePage(url)
 
       }

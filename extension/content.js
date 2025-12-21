@@ -21,6 +21,7 @@ let skipConfirmation = false
 
 
 let isShowingReader = false
+let isShowingParsingRulesConstructor = false
     
     
 document.addEventListener('DOMContentLoaded', onLoad);
@@ -122,15 +123,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
             window.postMessage({ type: "UPDATE_SKIP_CONFIRMATION_CONFIG", skip:skipConfirmation },"*");   
         }
 
-        if (messageName === 'OpenInPlayground') {
+        if (messageName === 'OpenInParsingRulesConstructor') {
 
-            console.log('open',currentLocation)
 
             showParsingRulesConstructor()
-
-          
-
-
 
         }
 
@@ -157,6 +153,7 @@ async function sendPageMetadata(sendResponse) {
         areLinksThick,
         skipConfirmation,
         isShowingReader,
+        isShowingParsingRulesConstructor,
         currentLocation
     })
 }
@@ -326,9 +323,6 @@ async function showParsingRulesConstructor(){
     const contentString = document.documentElement.outerHTML
 
 
-    console.log('contentString',contentString.slice(0,500))
-
-
     const res = await fetch(chrome.runtime.getURL("reader/prconstructor.html"));
     const html = await res.text();
     
@@ -347,7 +341,7 @@ async function showParsingRulesConstructor(){
 
     document.body.removeAttribute("class");
 
-    isShowingReader = true
+    isShowingParsingRulesConstructor = true
 
     const script = document.createElement('script');
     script.type = "module";

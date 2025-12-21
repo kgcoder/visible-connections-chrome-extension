@@ -38,12 +38,6 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
       });
     }
   }
-  // else if(msg.action === 'OpenInPlayground'){
-  //   const url = msg.url
 
-  //    chrome.tabs.create({
-  //         url: chrome.runtime.getURL("playground/playground.html") + "?pageUrl=" + encodeURI(url)
-  //   });
-  // }
 });
 

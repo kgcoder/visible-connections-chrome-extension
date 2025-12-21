@@ -183,4 +183,9 @@ html, body{
     flex:1;
 }
 
+#open-in-playground-button{
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
 
