@@ -49,7 +49,7 @@ export function getXMLFromHeaderInfo(headerInfo) {
 
     const headerXMLString = headerArray.length ? `<header>
         ${headerArray.join('\n')}
-    </header>` : ''
+        </header>` : ''
 
     return headerXMLString
 }

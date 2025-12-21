@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parsing Rules Constructor</title>
+</head>
+<body>
+    <div id="mainContainer">
+        <div id="topRow">
+            <span id="full-url-span"></span>
+            
+        </div>
+        <div id="bottomRow">
+            <div id="pageColumn">
+                <div id="pageHeader"></div>
+                <div id="pageDiv"></div>
+            </div>
+            <div id="rightPanel">
+                <form class="form-container">
+                    <div class="field">
+                        <label id="content-selector-label" for="contentSelector">Content selector</label>
+                        <div class="field-row">
+                        <input id="contentSelector" type="text" />
+                        <button id="content-next-guess-button" type="button">Next guess</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label id="title-selector-label" for="titleSelector">Title selector</label>
+                        <div class="field-row">
+                        <input id="titleSelector" type="text" />
+                        <button id="title-next-guess-button" type="button">Next guess</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="removeSelectors">Selectors to remove (one per line)</label>
+                        <textarea id="removeSelectors"></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="authorSelector">Author selector</label>
+                        <input id="authorSelector" type="text" />
+                    </div>
+
+                    <div class="field">
+                        <label for="dateSelector">Publication date selector</label>
+                        <input id="dateSelector" type="text" />
+                    </div>
+
+                    <button id="update-button" class="update-btn">Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

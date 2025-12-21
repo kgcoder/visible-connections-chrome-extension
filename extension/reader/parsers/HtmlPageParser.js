@@ -11,16 +11,16 @@ https://github.com/kgcoder/default-web
 */
 
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
-import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getH1TitleFromDoc, removeTitleFromContent, sanitizeHtml, showToastMessage } from "../helpers.js"
+import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getH1TitleFromDoc, getProtocolAndDomainFromUrl, removeTitleFromContent, sanitizeHtml, showToastMessage } from "../helpers.js"
 import { fetchWebPage } from "../NetworkManager.js"
 
-export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessage = false) {
+
+export function getActionsFromConfigString(configString){
     const actions = []
-   
     const chunks = configString.split('/')
     if (chunks.length % 2 !== 0) {
         showToastMessage('Something is wrong with the parsing config of the URL')
-        return null
+        return false
     }
 
     while (chunks.length) {
@@ -34,22 +34,26 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
     
     if (!selector) {
         showToastMessage('Something is wrong with the parsing config of the URL')
-        return null
+        return false
     }
 
 
-    const match = cleanUrl.match(/^(?<protocol>https?):\/\/(?<domain>[^/]+)\/?(?<rest>.*?)$/)
+    return actions
 
-    if (!match) {
+}
+export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessage = false) {
+    const actions = getActionsFromConfigString(configString)
+
+    if(!actions)return null
+   
+    const urlInfo = getProtocolAndDomainFromUrl(cleanUrl)
+    if(!urlInfo){
         showToastMessage('Parsing error')
         return null
     }
 
-
-    const protocol = match.groups.protocol
-    const domain = match.groups.domain
+    const {protocol, domain} = urlInfo
     
-
     const result = await fetchWebPage(cleanUrl)
     
     if (!result) {
@@ -70,10 +74,16 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
 
         return null
     }
-
-
     
-    let additionalForbiddenTags = []
+    return parseHtmlStringWithConfig(text,configString,cleanUrl,protocol,domain,actions)
+   
+}
+
+
+
+export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,protocol,domain,actions){
+    console.log('actions',actions)
+   let additionalForbiddenTags = []
 
     let titleSelector
 
@@ -81,11 +91,11 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
     let publicationDate
 
 
-    const sanitizedHtml = sanitizeHtml(text)
+    const sanitizedHtml = sanitizeHtml(htmlString)
 
 
     const unsanitizedHtmlParser = new DOMParser();
-    const unsanitizedHtmlDoc = unsanitizedHtmlParser.parseFromString(text, 'text/html');
+    const unsanitizedHtmlDoc = unsanitizedHtmlParser.parseFromString(htmlString, 'text/html');
 
 
 
@@ -93,8 +103,12 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
 
     const htmlDoc = htmlParser.parseFromString(sanitizedHtml, 'text/html');
 
+    let contentSelector
 
     actions.forEach(a => {
+        if(a.action === 'c'){
+            contentSelector = a.text
+        }
         if (a.action === 'r') {
             const tags = decodeURIComponent(a.text).split(',')
             additionalForbiddenTags.push(...tags)
@@ -131,7 +145,7 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
     let contentEl
     try{
 
-        contentEl = htmlDoc.querySelector(decodeURIComponent(selector));
+        contentEl = htmlDoc.querySelector(decodeURIComponent(contentSelector));
         
         if (!contentEl) {
             showToastMessage('Parsing error')
@@ -177,7 +191,4 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
     const dataObject = {html:content,headerInfo,base,xmlString,connectedDocsData:[],type:'text',url:`${cleanUrl}#pr=${configString}`,docSubtype:3,docType:'h'}
 
     return dataObject
-    
-   
 }
-

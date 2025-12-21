@@ -34,6 +34,7 @@ let docWidth
 
 
 window.onresize = () => {
+    if(!g.readingManager.isReading)return
     g.pdm.updateDocumentWidth()
     g.pdm.updateConnectedDocumentsVisibility()
     const collectionDiv = document.getElementById("RightDocumentCollectionContainer")

@@ -857,3 +857,19 @@ export function getXMlAndDataArrayFromJSONConnections(mainDataJSON) {
 
     return {connectionsString, connectedDocsData}
 }
+
+
+export function getProtocolAndDomainFromUrl(url){
+     const match = url.match(/^(?<protocol>https?):\/\/(?<domain>[^/]+)\/?(?<rest>.*?)$/)
+
+    if (!match) {
+        showToastMessage('Parsing error')
+        return null
+    }
+
+
+    const protocol = match.groups.protocol
+    const domain = match.groups.domain
+
+    return {protocol,domain}
+}

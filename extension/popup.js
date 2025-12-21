@@ -33,7 +33,7 @@ function getPageMetadata() {
 
 
 function updatePageMetadata(response) {
-    const {areLinksThick,skipConfirmation,isShowingReader} = response
+    const {areLinksThick,skipConfirmation,isShowingReader, currentLocation} = response
 
     const mainMenu = document.getElementById("mainMenu")
 
@@ -92,6 +92,16 @@ function updatePageMetadata(response) {
         })
 
     }
+
+
+    const openInPlaygroundButton = document.getElementById("open-in-playground-button")
+    openInPlaygroundButton.addEventListener('click',() => {
+        // chrome.runtime.sendMessage({
+        //     action: "OpenInPlayground",
+        //     url: currentLocation
+        // });
+        sendMessageToPage({ messageName: 'OpenInPlayground' })
+    })
 
 
     

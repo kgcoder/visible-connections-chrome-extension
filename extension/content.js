@@ -121,6 +121,20 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
             saveSkipConfirmation(skipConfirmation)
             window.postMessage({ type: "UPDATE_SKIP_CONFIRMATION_CONFIG", skip:skipConfirmation },"*");   
         }
+
+        if (messageName === 'OpenInPlayground') {
+
+            console.log('open',currentLocation)
+
+            showParsingRulesConstructor()
+
+          
+
+
+
+        }
+
+    
         
 
     }
@@ -142,7 +156,8 @@ async function sendPageMetadata(sendResponse) {
     sendResponse({
         areLinksThick,
         skipConfirmation,
-        isShowingReader
+        isShowingReader,
+        currentLocation
     })
 }
 
@@ -305,6 +320,48 @@ document.write = () => {};
     document.head.appendChild(sepiaThemeLink)
 }
 
+
+async function showParsingRulesConstructor(){
+
+    const contentString = document.documentElement.outerHTML
+
+
+    console.log('contentString',contentString.slice(0,500))
+
+
+    const res = await fetch(chrome.runtime.getURL("reader/prconstructor.html"));
+    const html = await res.text();
+    
+
+
+    document.documentElement.innerHTML = `
+  <head><title>${document.title}</title></head>
+  <body><div id="my-reader">Loading...</div></body>
+`;
+    for (const script of document.scripts) {
+    script.remove();
+    }
+    document.write = () => {};
+    
+    document.body.innerHTML = html;
+
+    document.body.removeAttribute("class");
+
+    isShowingReader = true
+
+    const script = document.createElement('script');
+    script.type = "module";
+    script.src = chrome.runtime.getURL('reader/prConstructorStartUp.js');
+    script.onload = () => {
+        window.dispatchEvent(new CustomEvent('initParsingRulesConstructor', {detail:{ contentString, url:currentLocation }}));
+    };
+    document.body.appendChild(script);
+
+    const cssLink = document.createElement('link')
+    cssLink.href = chrome.runtime.getURL('reader/prconstructor.css')
+    cssLink.rel = "stylesheet"
+    document.head.appendChild(cssLink)
+} 
 
 function unescapeHTML(html) {
     return new DOMParser()
