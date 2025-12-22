@@ -11,19 +11,16 @@ https://github.com/kgcoder/default-web
 */
 
 import g from "./Globals.js"
-import { copyDataToClipboard, getProtocolAndDomainFromUrl, removeTitleFromContent, replaceMediaTagsWithLinksInDiv, sanitizeHtml, setTheme, showToastMessage } from "./helpers.js";
+import { copyDataToClipboard, getProtocolAndDomainFromUrl, replaceMediaTagsWithLinksInDiv, sanitizeHtml, showToastMessage } from "./helpers.js";
 import IconsInfo from "./Icons.js";
-import { parseStaticContent } from "./parsers/ParsingManager.js";
-import { checkKey } from "./KeyboardManager.js";
-import { getObjectFromLocalStorage } from "./LocalStorageManager.js";
-import { getActionsFromConfigString, parseHtmlStringWithConfig } from "./parsers/HtmlPageParser.js";
+import { getObjectFromLocalStorage, saveObjectInLocalStorage } from "./LocalStorageManager.js";
+import { getSelectorsFromConfigString, parseHtmlStringWithConfig } from "./parsers/HtmlPageParser.js";
 import { populateHeaderDiv } from "./HeaderMethods.js";
 
+const kNoSavedRulesMessage = 'There are no saved parsing rules for this website'
 let originalContentString
 let originalUrl
 
-let currentTitle
-let currentContent
 let finalUrl
 
 let possibleContentSelectors = []
@@ -31,7 +28,7 @@ let possibleTitleSelectors = []
 
 let currentPossibleContentSelectorIndex = 0
 let currentPossibleTitleSelectorIndex = 0
-
+let savedParsingRules = ''
 
 
 // List of selectors to try in order
@@ -100,10 +97,60 @@ const selectors = [
 
 
 window.addEventListener('initParsingRulesConstructor', async (e) => {
+
+    const contentSelectorInput = document.getElementById("contentSelector")
+    const titleSelectorInput = document.getElementById("titleSelector")
+    const removeSelectorsTextarea = document.getElementById("removeSelectors")
+
+
+    const parsingRulesInput = document.getElementById("parsingRulesInput")
+
+    const applyChangesButton = document.getElementById("apply-changes-button")
+    const applyParsingRulesFromOneFieldButton = document.getElementById("parsing-rules-apply-button")
+    const saveParsingRulesButton = document.getElementById("save-parsing-rules-button")
+    const applySavedParsingRulesButton = document.getElementById("apply-saved-parsing-rules-button")
+    const deleteParsingRulesButton = document.getElementById("delete-parsing-rules-button")
+
+    const savedParsingRulesSpan = document.getElementById("saved-parsing-rules-span")
+
+    const allWebsitesParsingRulesButton = document.getElementById("parsing-rules-for-all-websites-button")
+    
+
+    const overlayDiv = document.getElementById("overlay")
+    const allWebsitesPopup = document.getElementById("parsing-rules-list-popup")
+    const allWebsitesTextArea = document.getElementById("parsing-rules-list-textarea")
+    const allWebsitesCloseButton = document.getElementById("parsing-rules-list-close-button")
+    const allWebsitesSaveButton = document.getElementById("parsing-rules-list-save-button")
+
+
+    applySavedParsingRulesButton.style.display = 'none'
+    deleteParsingRulesButton.style.display = 'none'
+
+
     const { url, contentString, } = e.detail;
 
     originalUrl = url
     originalContentString = contentString
+
+
+    const hostname = new URL(originalUrl).hostname
+
+
+
+    savedParsingRules = await getParsingRulesForHostname(hostname)
+
+    if(savedParsingRules){
+        applySavedParsingRulesButton.style.display = 'flex'
+        deleteParsingRulesButton.style.display = 'flex'
+    }
+
+
+    savedParsingRulesSpan.innerText = savedParsingRules ? savedParsingRules : kNoSavedRulesMessage
+
+
+
+
+
 
 
     loadUIAndIcons()
@@ -116,34 +163,59 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     })
 
 
+    allWebsitesParsingRulesButton.addEventListener('click', async (e) => {
+        e.preventDefault()
+        const array = await getListOfParsingRules()
+
+        overlayDiv.style.display = 'flex'
+        allWebsitesPopup.style.display = 'flex'
+
+        allWebsitesTextArea.value = array.filter(item => !!item.trim()).join('\n')
+    })
+
+
+    allWebsitesCloseButton.addEventListener('click',() => {
+        e.preventDefault()
+        overlayDiv.style.display = 'none'
+        allWebsitesPopup.style.display = 'none'
+    })
+
+
+    allWebsitesSaveButton.addEventListener('click',() => {
+        e.preventDefault()
+
+        const text = allWebsitesTextArea.value
+
+        const lines = text.split('\n').filter(item => !!item.trim())
+        const parsingRulesObject = {}
+
+        for(const line of lines){
+            const chunks = line.split(' ')
+            if(chunks.length !== 2)continue
+            const [key, value] = chunks
+
+            parsingRulesObject[key] = value
+        }
+
+
+   
+        saveObjectInLocalStorage('parsingRulesObject',parsingRulesObject)
+
+        showToastMessage("Parsing rules are saved for all websites")
+    })
+
+
+
     const result = guessParsingRules()
 
-    if(result && result.isText){
-
-        finalUrl = originalUrl + '#pr=text'
-
-        const pageDiv = document.getElementById("pageDiv")
-
-        pageDiv.innerHTML = contentString
-
-
-        const fullUrlSpan = document.getElementById("full-url-span")
-        fullUrlSpan.innerText = finalUrl
-
-
-
-
-    }else if(result){
+    if(result){
 
         const {contentSelectors,titleSelectors, additionalForbiddenTags} = result 
 
         possibleContentSelectors = contentSelectors
         possibleTitleSelectors = titleSelectors
 
-        const contentSelectorInput = document.getElementById("contentSelector")
-        const titleSelectorInput = document.getElementById("titleSelector")
-        const removeSelectorsTextarea = document.getElementById("removeSelectors")
-
+  
         const contenSelectorLabel = document.getElementById("content-selector-label")
         contenSelectorLabel.innerText = `Content selector (1/${possibleContentSelectors.length})`
         if(contentSelectors.length){
@@ -163,6 +235,11 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
         renderPage()
 
+    }
+
+
+    if(savedParsingRules){
+        loadParsingRulesFromString(savedParsingRules)
     }
 
 
@@ -216,18 +293,121 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     })
 
 
-    const updateButton = document.getElementById("update-button")
-
-    updateButton.addEventListener('click',(e) => {
+    applyChangesButton.addEventListener('click',(e) => {
         e.preventDefault()
 
         constructFullUrl()
         renderPage()
     })
 
+    applyParsingRulesFromOneFieldButton.addEventListener('click',(e) => {
+        e.preventDefault()
+
+        const prString = parsingRulesInput.value.trim()
+
+       loadParsingRulesFromString(prString)
+
+    })
+
+    saveParsingRulesButton.addEventListener('click',async(e) => {
+        e.preventDefault()
+        const hostname = new URL(finalUrl).hostname
+
+        const [_,prString] = finalUrl.split('#pr=')
+
+        await saveParsingRulesForHostname(hostname,prString)
+
+        showToastMessage('Parsing rules are saved for this website')
+
+
+        if(prString){
+            applySavedParsingRulesButton.style.display = 'flex'
+            deleteParsingRulesButton.style.display = 'flex'
+        }
+
+
+        savedParsingRulesSpan.innerText = prString ?? kNoSavedRulesMessage
+
+
+
+
+
+     
+    })
+    applySavedParsingRulesButton.addEventListener('click',async (e) => {
+        e.preventDefault()
+
+        const hostname = new URL(finalUrl).hostname
+
+        const prString = await getParsingRulesForHostname(hostname)
+
+        loadParsingRulesFromString(prString)
+
+
+
+
+
+     
+    })
+    deleteParsingRulesButton.addEventListener('click',async(e) => {
+        e.preventDefault()
+
+        const confirmed = confirm(`Are you sure you want to delete parsing rules for this website?`)
+        if (!confirmed)return
+
+        const hostname = new URL(finalUrl).hostname
+
+        await saveParsingRulesForHostname(hostname,'')
+
+        savedParsingRulesSpan.innerText = kNoSavedRulesMessage
+
+        showToastMessage("Parsing rules were deleted for website " + hostname)
+
+
+
+     
+    })
+
  
 
 });
+
+
+
+function loadParsingRulesFromString(prString){
+    if(!prString)return
+
+
+    const contentSelectorInput = document.getElementById("contentSelector")
+    const titleSelectorInput = document.getElementById("titleSelector")
+    const removeSelectorsTextarea = document.getElementById("removeSelectors")
+
+    const authorSelectorInput = document.getElementById("authorSelector")
+    const dateSelectorInput = document.getElementById("dateSelector")
+
+
+    const selectors = getSelectorsFromConfigString(prString)
+
+
+    if(!selectors){
+        showToastMessage('Somtething is wrong with parsing rules')
+        return
+    }
+
+    const {contentSelector,titleSelector,removalSelectors,authorNameSelector,publicationDateSelector} = selectors
+
+
+    contentSelectorInput.value = contentSelector ?? ''
+    titleSelectorInput.value = titleSelector ?? ''
+    removeSelectorsTextarea.value = removalSelectors.join('\n')
+    authorSelectorInput.value = authorNameSelector ?? ''
+    dateSelectorInput.value = publicationDateSelector ?? ''
+
+
+    constructFullUrl()
+    renderPage()
+
+}
 
 
 function loadUIAndIcons() {
@@ -310,21 +490,7 @@ function guessParsingRules(){
     }
 
 
-    if (originalUrl.startsWith('https://www.gutenberg.org/') && originalUrl.endsWith('.txt')) {
-        
-        currentContent = originalContentString
 
-
-
-        const titleMatch = currentContent.match(/^Title: (.*?)$/im)
-        if (titleMatch) {
-            currentTitle = titleMatch[1]
-        }
-
-        return {isText:true}
-
-
-     }
 
     const sanitizedHtml = sanitizeHtml(originalContentString)
 
@@ -390,14 +556,7 @@ function renderPage(){
     const {protocol, domain} = urlInfo
 
 
-    const actions = getActionsFromConfigString(configString)
-    if(!actions){
-        showBlankPage()
-        return
-    }
-
-
-    const dataObject = parseHtmlStringWithConfig(originalContentString,configString,cleanUrl,protocol,domain,actions)
+    const dataObject = parseHtmlStringWithConfig(originalContentString,configString,cleanUrl,protocol,domain)
 
     if(!dataObject){
         showBlankPage()
@@ -438,5 +597,40 @@ function showBlankPage(){
 
 }
 
+
+async function getListOfParsingRules() {
+    const {value:result} = await getObjectFromLocalStorage('parsingRulesObject')
+    const parsingRulesObject = result ?? {}
+
+    const array = Object.entries(parsingRulesObject)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key} ${value}`);
+
+
+    return array  
+}
+
+
+async function getParsingRulesForHostname(hostname) {
+    const {value:result} = await getObjectFromLocalStorage('parsingRulesObject')
+    const parsingRulesObject = result ?? {}
+    return parsingRulesObject[hostname] ?? ''
+}
+
+
+async function saveParsingRulesForHostname(hostname, prString) {
+    const {value:result} = await getObjectFromLocalStorage('parsingRulesObject')
+
+    const parsingRulesObject = result ?? {}
+   
+    if (!prString) {
+        delete parsingRulesObject[hostname]
+    } else {
+        parsingRulesObject[hostname] = prString
+    }
+    
+    saveObjectInLocalStorage('parsingRulesObject',parsingRulesObject)
+
+}
 
 

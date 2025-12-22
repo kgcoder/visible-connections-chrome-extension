@@ -15,6 +15,48 @@ import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getH1TitleFromDoc, getP
 import { fetchWebPage } from "../NetworkManager.js"
 
 
+export function getSelectorsFromConfigString(configString){
+    const actions = getActionsFromConfigString(configString)
+
+    if(!actions)return null
+
+    let contentSelector
+    let titleSelector
+
+    let removalSelectors = []
+
+
+    let authorNameSelector
+    let publicationDateSelector
+
+
+    actions.forEach(a => {
+        if(a.action === 'c'){
+            contentSelector = decodeURIComponent(a.text.trim())
+        }
+        if (a.action === 'r') {
+            const tags = decodeURIComponent(a.text.trim()).split(',').map(tag => tag.trim()).filter(tag => !!tag)
+            removalSelectors.push(...tags)
+        }
+        if (a.action === 't') {
+            titleSelector = decodeURIComponent(a.text.trim())
+        }
+
+        if (a.action === 'a') {
+            authorNameSelector = decodeURIComponent(a.text.trim()) 
+        }
+
+        if (a.action === 'd') {
+            publicationDateSelector = decodeURIComponent(a.text)
+        }
+
+    })
+
+    return {contentSelector,titleSelector,removalSelectors,authorNameSelector,publicationDateSelector}
+        
+
+}
+
 export function getActionsFromConfigString(configString){
     const actions = []
     const chunks = configString.split('/')
@@ -41,10 +83,11 @@ export function getActionsFromConfigString(configString){
     return actions
 
 }
-export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessage = false) {
-    const actions = getActionsFromConfigString(configString)
 
-    if(!actions)return null
+
+
+
+export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessage = false) {
    
     const urlInfo = getProtocolAndDomainFromUrl(cleanUrl)
     if(!urlInfo){
@@ -75,17 +118,14 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
         return null
     }
     
-    return parseHtmlStringWithConfig(text,configString,cleanUrl,protocol,domain,actions)
+    return parseHtmlStringWithConfig(text,configString,cleanUrl,protocol,domain)
    
 }
 
 
 
-export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,protocol,domain,actions){
-    console.log('actions',actions)
-   let additionalForbiddenTags = []
+export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,protocol,domain){
 
-    let titleSelector
 
     let authorName
     let publicationDate
@@ -103,40 +143,35 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
 
     const htmlDoc = htmlParser.parseFromString(sanitizedHtml, 'text/html');
 
-    let contentSelector
 
-    actions.forEach(a => {
-        if(a.action === 'c'){
-            contentSelector = a.text
-        }
-        if (a.action === 'r') {
-            const tags = decodeURIComponent(a.text).split(',')
-            additionalForbiddenTags.push(...tags)
-        }
-        if (a.action === 't') {
-            titleSelector = decodeURIComponent(a.text)
-        }
+    const selectors = getSelectorsFromConfigString(configString)
 
-        if (a.action === 'a') {
-            try{
-                const authorEl = htmlDoc.querySelector(decodeURIComponent(a.text));
-                if(authorEl)authorName = authorEl.textContent
-            }catch(e){
-                //invalid selector
-            }
-        }
+    if(!selectors || !selectors.contentSelector){
+        showToastMessage('Something is wrong with parsing rules (#pr=...) for this page')
+        return null
+    }
+    const {contentSelector,titleSelector,removalSelectors,authorNameSelector,publicationDateSelector} = selectors
 
-        if (a.action === 'd') {
-            try{
-                const dateEl = htmlDoc.querySelector(decodeURIComponent(a.text));
-                if (dateEl) publicationDate = dateEl.textContent
-            }catch(e){
-                //invalid selector
-            }
-        }
-        
 
-    })
+    if(authorNameSelector){
+        try{
+            const authorEl = htmlDoc.querySelector(decodeURIComponent(authorNameSelector));
+            if(authorEl)authorName = authorEl.textContent
+        }catch(e){
+            //invalid selector
+        }
+    }
+
+    if(publicationDateSelector){
+        try{
+            const dateEl = htmlDoc.querySelector(decodeURIComponent(publicationDateSelector));
+            if (dateEl) publicationDate = dateEl.textContent
+        }catch(e){
+            //invalid selector
+        }
+    }
+
+
 
   
     
@@ -158,7 +193,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
     }
 
     
-    let contentHtml = sanitizeHtml(contentEl.innerHTML, additionalForbiddenTags)
+    let contentHtml = sanitizeHtml(contentEl.innerHTML, removalSelectors)
 
     const titleText = getH1TitleFromDoc(htmlDoc, titleSelector) 
     

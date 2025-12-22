@@ -315,6 +315,11 @@ document.write = () => {};
     sepiaThemeLink.href = chrome.runtime.getURL('reader/themes/sepia.css')
     sepiaThemeLink.rel = "stylesheet"
     document.head.appendChild(sepiaThemeLink)
+
+    const hdocStylesLink = document.createElement('link')
+    hdocStylesLink.href = chrome.runtime.getURL('reader/hdocStyles.css')
+    hdocStylesLink.rel = "stylesheet"
+    document.head.appendChild(hdocStylesLink)
 }
 
 
@@ -355,6 +360,11 @@ async function showParsingRulesConstructor(){
     cssLink.href = chrome.runtime.getURL('reader/prconstructor.css')
     cssLink.rel = "stylesheet"
     document.head.appendChild(cssLink)
+
+    const hdocStylesLink = document.createElement('link')
+    hdocStylesLink.href = chrome.runtime.getURL('reader/hdocStyles.css')
+    hdocStylesLink.rel = "stylesheet"
+    document.head.appendChild(hdocStylesLink)
 } 
 
 function unescapeHTML(html) {

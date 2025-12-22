@@ -28,17 +28,17 @@ export async function loadStaticContentFromUrl(originalUrl, muteErrorMessage = f
 
     if (configMatch) {
 
-        //const allowedKeys = ['c','t','r','a','b','d']
+        //const allowedKeys = ['c','t','r','a','d']
 
         const cleanUrl = configMatch[1]
         
         let configString = configMatch[2]
 
-        if (configString === 'wppost' || configString === 'wppage') {
-            const dataObject = await checkWorpressPostOrPage(originalUrl,configString,muteErrorMessage)
-            if (dataObject) return dataObject
-            return  
-        }
+        // if (configString === 'wppost' || configString === 'wppage') {
+        //     const dataObject = await checkWorpressPostOrPage(originalUrl,configString,muteErrorMessage)
+        //     if (dataObject) return dataObject
+        //     return  
+        // }
 
 
         if (configString === 'text') {

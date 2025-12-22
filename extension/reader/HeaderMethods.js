@@ -47,9 +47,10 @@ export function getXMLFromHeaderInfo(headerInfo) {
         publicationDate ? `<date>${escapeXml(publicationDate)}</date>` : ''
     ].filter(item => !!item)
 
-    const headerXMLString = headerArray.length ? `<header>
-        ${headerArray.join('\n')}
-        </header>` : ''
+    const headerXMLString = headerArray.length ? 
+`<header>
+${headerArray.join('\n')}
+</header>` : ''
 
     return headerXMLString
 }

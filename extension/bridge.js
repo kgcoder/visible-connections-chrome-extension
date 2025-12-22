@@ -67,6 +67,8 @@ window.addEventListener("message", async (event) => {
         window.postMessage({type: "LOCAL_STORAGE_RESULT", value:savedObject, id})
     }
 
+    
+
 });
 
 // Listen for results from background

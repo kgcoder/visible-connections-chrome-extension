@@ -67,9 +67,11 @@ white-space: normal;
 #rightPanel{
     display: flex;
     flex-direction: column;
-    width:300px;
+    width:500px;
     background-color: rgba(37, 38, 39, 0.1);
     padding: 20px;
+    min-height: 0; 
+    overflow-y: auto;
     
 }
 
@@ -80,6 +82,7 @@ input{
 
 textarea{
     padding-left: 5px;
+    resize: none;
 }
 
 .form-container {
@@ -123,7 +126,10 @@ margin-top: 12px;
 align-self: flex-start;
 }
 
-
+.RowInHeaderDiv {
+    display: flex;
+    justify-content: space-between;
+}
            
 #ToastMessageDiv {
     display: flex;
@@ -140,3 +146,50 @@ align-self: flex-start;
     transform: translate(-50%, -50%);
     z-index: 1000000;
 }
+
+#overlay{
+    display:none;
+    position: absolute;
+    left:0;
+    right:0;
+    top:0;
+    bottom: 0;
+    background-color: rgba(37, 38, 39, 0.5);
+}
+
+#parsing-rules-list-popup{
+    display: none;
+    position: absolute;
+    left: 50%;
+    top:50%;
+    transform: translate(-50%, -50%);
+
+    width: 80%;
+    height:400px;
+
+    flex-direction: column;
+
+    background-color: lightgray;
+
+    padding:10px;
+
+}
+
+#parsing-rules-list-textarea{
+    height:350px;
+    resize: none;
+    white-space: nowrap;
+    overflow-x: auto;
+
+}
+
+#parsing-list-buttons-row{
+    display: flex;
+    justify-content: space-around;
+    flex:1;
+    align-items: center;
+
+}
+
+
+       

@@ -35,7 +35,5 @@ export function getObjectFromLocalStorage(objectName) {
 
 
 export function saveObjectInLocalStorage(objectName, object) {
-
     window.postMessage({ type: "SAVE_OBJECT_IN_LOCAL_STORAGE", objectName, object }, "*");
-
 }
