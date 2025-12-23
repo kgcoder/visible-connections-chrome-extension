@@ -26,9 +26,8 @@ window.addEventListener("message", async (event) => {
   if (type === "FETCH_WEB_PAGE") {
     const { url, id } = event.data
     
-    if (!isShowingReader) {
-      return
-    }
+    if (!isShowingReader)return
+    
     let hostname
     try{
       hostname = new URL(url).hostname
@@ -56,11 +55,14 @@ window.addEventListener("message", async (event) => {
     }
 
     if (type === "SAVE_OBJECT_IN_LOCAL_STORAGE") {
+
+        if(!isShowingReader && !isShowingParsingRulesConstructor)return
         const { objectName, object } = event.data
         chrome.storage.local.set({ [objectName]: object });
     }
 
     if (type === "GET_OBJECT_FROM_LOCAL_STORAGE") {
+      if(!isShowingReader && !isShowingParsingRulesConstructor)return
         const { objectName, id } = event.data
         const result = await chrome.storage.local.get(objectName)
         const savedObject = result[objectName]
