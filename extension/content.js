@@ -101,7 +101,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
 
     if(message === 'giveMePageMetadata'){
         
-        sendPageMetadata(sendResponse)
+        sendPageMetadata()
 
     }else{
         const messageName = message.messageName
@@ -142,20 +142,25 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
 
 
 
-async function sendPageMetadata(sendResponse) {
+async function sendPageMetadata() {
 
     const areLinksThick = await getLinkThicknessFromStorage()
 
     const skipConfirmation = await getSkipConfirmationFromStorage()
 
 
-    sendResponse({
+
+    chrome.runtime.sendMessage({
+            type: 'pageMetadata',
+            payload: {
         areLinksThick,
         skipConfirmation,
         isShowingReader,
         isShowingParsingRulesConstructor,
         currentLocation
-    })
+    }
+        });
+
 }
 
 

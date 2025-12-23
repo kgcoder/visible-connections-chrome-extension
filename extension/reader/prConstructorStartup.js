@@ -184,6 +184,10 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     allWebsitesSaveButton.addEventListener('click',() => {
         e.preventDefault()
 
+        const confirmed = confirm(`Parsing rules for all websites will be updated. If not careful you may loose some data. Are you sure you want to proceed?`)
+        if (!confirmed)return
+
+
         const text = allWebsitesTextArea.value
 
         const lines = text.split('\n').filter(item => !!item.trim())

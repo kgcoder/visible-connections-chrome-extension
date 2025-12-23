@@ -18,15 +18,21 @@ document.addEventListener('DOMContentLoaded', function () {
 }, false)
 
 
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'pageMetadata') {
+        updatePageMetadata(message.payload);
+    }
+});
+
+
 function getPageMetadata() {
-    chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
 
-        chrome.tabs.sendMessage(tabs[0].id, 'giveMePageMetadata', function (response, error) {
-         
-            updatePageMetadata(response)
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (!tab?.id) return;
 
-        })
-    })
+        chrome.tabs.sendMessage(tab.id, 'giveMePageMetadata');
+    });
+  
 }
 
 
@@ -35,7 +41,7 @@ function getPageMetadata() {
 function updatePageMetadata(response) {
     const {areLinksThick,skipConfirmation,isShowingReader,isShowingParsingRulesConstructor, currentLocation} = response
 
-    const mainMenu = document.getElementById("mainMenu")
+    const settingsMenu = document.getElementById("settingsMenu")
 
     const thickLinksLabel = document.createElement('label')
     thickLinksLabel.style.display = 'flex'
@@ -51,7 +57,7 @@ function updatePageMetadata(response) {
     thickLinksLabel.appendChild(thickLinksCheckbox)
     thickLinksLabel.appendChild(document.createTextNode('Thick links'))
 
-    mainMenu.appendChild(thickLinksLabel)
+    settingsMenu.appendChild(thickLinksLabel)
 
     thickLinksCheckbox.addEventListener('change', () => {
         sendMessageToPage({ messageName: 'ToggleThickLinks', enabled: thickLinksCheckbox.checked })
@@ -72,7 +78,7 @@ function updatePageMetadata(response) {
     dontAskWhenFetchingLabel.appendChild(dontAskWhenFetchingCheckbox)
     dontAskWhenFetchingLabel.appendChild(document.createTextNode('Don\'t ask for confirmation when fetching pages from other websites'))
 
-    mainMenu.appendChild(dontAskWhenFetchingLabel)
+    settingsMenu.appendChild(dontAskWhenFetchingLabel)
 
     dontAskWhenFetchingCheckbox.addEventListener('change', () => {
         sendMessageToPage({ messageName: 'SetFetchConfirmationPreference', skipConfirmation: dontAskWhenFetchingCheckbox.checked })
@@ -93,12 +99,12 @@ function updatePageMetadata(response) {
 
     }else if(!isShowingParsingRulesConstructor){
         const openInPlaygroundButton = document.getElementById("open-in-playground-button")
-        openInPlaygroundButton.style.display = 'flex'
         openInPlaygroundButton.addEventListener('click',() => {
             sendMessageToPage({ messageName: 'OpenInParsingRulesConstructor' })
-    
+            
             window.close()
         })
+        openInPlaygroundButton.style.display = 'flex'
 
     }
 
@@ -117,9 +123,12 @@ function updatePageMetadata(response) {
     sourceCodeLink.addEventListener('click',() => window.open('https://github.com/kgcoder/visible-connections-chrome-extension','_blank'))
 
 
+    const mainContainer = document.getElementById("mainContainer")
+    mainContainer.style.display = 'flex'
 
+    const fallbackMessage = document.getElementById("fallback-message")
+    fallbackMessage.style.display = 'none'
 
-    mainMenu.style.display = 'flex'
 
 
 }

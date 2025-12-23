@@ -17,32 +17,40 @@
         <div id="popup-header">
             <span id="popup-title">Visible Connections</span>
         </div>
+        <span id="fallback-message" style="margin:15px;">Try reloading the page</span>
 
-        <div id="mainMenu" style="display: flex; flex-direction: column;">
-            <h2>Settings</h2>
-
-        </div>
-
-        <div id="right-page-url-container" style="display: none;">
-            <h2>Connect to another page</h2>
-            <div id="right-doc-download-button-container">
-                <input id="right-doc-url-input" placeholder="Enter URL of another page" type="url">
-                <button id="right-doc-download-button">Load</button>
+        <div id="mainContainer">
+    
+    
+            <div id="settingsMenu" style="display: flex; flex-direction: column;">
+                <h2>Settings</h2>
+    
             </div>
+    
+            <div id="right-page-url-container" style="display: none;">
+                <h2>Connect to another page</h2>
+                <div id="right-doc-download-button-container">
+                    <input id="right-doc-url-input" placeholder="Enter URL of another page" type="url">
+                    <button id="right-doc-download-button">Load</button>
+                </div>
+            </div>
+    
+            <h2><a id="open-in-playground-button" href="#">Open parsing rules editor</a></h2>
+                
+    
+            <div id="links-container">
+                <h2>Links</h2>
+                <a id="visible-connections-examples-link" href="#" class="popup-bottom-link">Examples of visible connections</a>
+                <div class="vertical-spacer"></div>
+                <a id="how-to-link" href="#" class="popup-bottom-link">How to create visible connections</a>
+                <div class="vertical-spacer"></div>
+                <a id="source-code-link" href="#" class="popup-bottom-link">Source code</a>
+                <div class="vertical-spacer"></div>
+    
+            </div>
+
         </div>
 
-        <button id="open-in-playground-button" style="display: none;">Create parsing rules for this page</button>
-
-        <div id="links-container">
-            <h2>Links</h2>
-            <a id="visible-connections-examples-link" href="#" class="popup-bottom-link">Examples of visible connections</a>
-            <div class="vertical-spacer"></div>
-            <a id="how-to-link" href="#" class="popup-bottom-link">How to create visible connections</a>
-            <div class="vertical-spacer"></div>
-            <a id="source-code-link" href="#" class="popup-bottom-link">Source code</a>
-            <div class="vertical-spacer"></div>
-
-        </div>
         
        
 

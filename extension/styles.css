@@ -1,7 +1,4 @@
-@font-face {
-    font-family: MontserratBold;
-    src: url(fonts/Montserrat-Bold.ttf);
-}
+
 
 html, body{
     margin: 0;
@@ -27,9 +24,16 @@ html, body{
 
 }
 
-#mainMenu{
+#mainContainer{
     display: none;
-    padding-left: 10px;
+    flex-direction: column;
+    padding: 15px;
+
+}
+
+#parsing-rules-section{
+    display: none;
+    flex-direction: column;
 }
 
 .vertical-spacer{
@@ -49,7 +53,6 @@ html, body{
 #links-container{
     display: flex;
     flex-direction: column;
-    padding-left: 10px;
 }
 
 .PopupItemDiv{
@@ -143,7 +146,6 @@ html, body{
 
 
 #fallback-message{
-    margin-left: 10px;
     margin-top: 20px;
     font-size: 14px;
 }
@@ -165,8 +167,7 @@ html, body{
 #right-page-url-container{
     display: flex;
     flex-direction: column;
-    padding-left: 10px;
-    padding-right: 10px;
+   
 }
 
 
@@ -181,11 +182,13 @@ html, body{
 #right-doc-url-input{
     display: flex;
     flex:1;
+    height: 30px;
+    padding-left: 5px;
 }
 
 #open-in-playground-button{
-    margin-left: 10px;
-    margin-right: 10px;
+    display: none;
+  
 }
 
 
