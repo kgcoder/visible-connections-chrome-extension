@@ -155,7 +155,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
 
     if(authorNameSelector){
         try{
-            const authorEl = htmlDoc.querySelector(decodeURIComponent(authorNameSelector));
+            const authorEl = unsanitizedHtmlDoc.querySelector(decodeURIComponent(authorNameSelector));
             if(authorEl)authorName = authorEl.textContent
         }catch(e){
             //invalid selector
@@ -164,7 +164,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
 
     if(publicationDateSelector){
         try{
-            const dateEl = htmlDoc.querySelector(decodeURIComponent(publicationDateSelector));
+            const dateEl = unsanitizedHtmlDoc.querySelector(decodeURIComponent(publicationDateSelector));
             if (dateEl) publicationDate = dateEl.textContent
         }catch(e){
             //invalid selector
@@ -180,7 +180,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
     let contentEl
     try{
 
-        contentEl = htmlDoc.querySelector(decodeURIComponent(contentSelector));
+        contentEl = unsanitizedHtmlDoc.querySelector(decodeURIComponent(contentSelector));
         
         if (!contentEl) {
             showToastMessage('Parsing error')
@@ -195,7 +195,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
     
     let contentHtml = sanitizeHtml(contentEl.innerHTML, removalSelectors)
 
-    const titleText = getH1TitleFromDoc(htmlDoc, titleSelector) 
+    const titleText = getH1TitleFromDoc(unsanitizedHtmlDoc, titleSelector) 
     
 
     const pageTitleFromHead = unsanitizedHtmlDoc.title ?? ''

@@ -369,20 +369,9 @@ export function getDesiredConnectionsFromHdocDataJson(dataJSON) {
 
 export function sanitizeHtml(htmlString, additionalForbiddenTags = []) {
     
-
-    const allowedTags = ['a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'bdi', 'bdo', 'big', 'blink', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'content', 'data', 'datalist', 'dd', 'decorator', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'element', 'em', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'main', 'map', 'mark', 'marquee', 'menu', 'menuitem', 'meter', 'nav', 'nobr', 'ol', 'optgroup', 'option', 'output', 'p', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'search', 'section', 'select', 'shadow', 'slot', 'small', 'source', 'spacer', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr'];
-
-    const clean = DOMPurify.sanitize(htmlString,{
-        ALLOWED_TAGS: allowedTags,   // allow all tags (except obviously unsafe ones)
-        ALLOWED_ATTR: false,   // allow all safe attributes
-        ADD_TAGS: ['iframe'],  // explicitly allow <iframe>
-        ADD_ATTR: ['target','allow', 'allowfullscreen', 'frameborder', 'src', 'height', 'width', 'referrerpolicy', 'loading', 'href', 'class', 'id','itemprop'],
-    });
-
-
     const htmlParser = new DOMParser();
 
-    const htmlDoc = htmlParser.parseFromString(clean, 'text/html');
+    const htmlDoc = htmlParser.parseFromString(htmlString, 'text/html');
 
 
     htmlDoc.querySelectorAll('[style]').forEach(el => {
@@ -413,9 +402,6 @@ export function sanitizeHtml(htmlString, additionalForbiddenTags = []) {
         }
     });
 
-
-
-
     htmlDoc.querySelectorAll("*").forEach(el => {
         [...el.attributes].forEach(attr => {
             if (attr.name.startsWith("on") || attr.value.trim().toLowerCase().startsWith("javascript:")) {
@@ -427,7 +413,19 @@ export function sanitizeHtml(htmlString, additionalForbiddenTags = []) {
     let sanitizedHtml = htmlDoc.body.innerHTML
     sanitizedHtml = sanitizedHtml.replace(/<iframe([^<]*?)\/>/gim,'<iframe$1></iframe>')
 
-    return sanitizedHtml ?? ''
+
+    const allowedTags = ['a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'bdi', 'bdo', 'big', 'blink', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'content', 'data', 'datalist', 'dd', 'decorator', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'element', 'em', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'main', 'map', 'mark', 'marquee', 'menu', 'menuitem', 'meter', 'nav', 'nobr', 'ol', 'optgroup', 'option', 'output', 'p', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'search', 'section', 'select', 'shadow', 'slot', 'small', 'source', 'spacer', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr'];
+
+    const purifiedHtml = DOMPurify.sanitize(sanitizedHtml,{
+        ALLOWED_TAGS: allowedTags,   // allow all tags (except obviously unsafe ones)
+        ALLOWED_ATTR: false,   // allow all safe attributes
+        ADD_TAGS: ['iframe'],  // explicitly allow <iframe>
+        ADD_ATTR: ['target','allow', 'allowfullscreen', 'frameborder', 'src', 'height', 'width', 'referrerpolicy', 'loading', 'href', 'class', 'id'],
+    });
+
+
+
+    return purifiedHtml ?? ''
 
 
 
