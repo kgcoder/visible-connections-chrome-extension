@@ -12,7 +12,6 @@ https://github.com/kgcoder/default-web
 
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
 import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getH1TitleFromDoc, getProtocolAndDomainFromUrl, removeTitleFromContent, sanitizeHtml, showToastMessage } from "../helpers.js"
-import { fetchWebPage } from "../NetworkManager.js"
 
 
 export function getSelectorsFromConfigString(configString){
@@ -87,7 +86,7 @@ export function getActionsFromConfigString(configString){
 
 
 
-export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessage = false) {
+export async function parseHtmlPage(htmlString,configString,cleanUrl) {
    
     const urlInfo = getProtocolAndDomainFromUrl(cleanUrl)
     if(!urlInfo){
@@ -97,28 +96,7 @@ export async function getHtmlPageAndParseIt(configString,cleanUrl,muteErrorMessa
 
     const {protocol, domain} = urlInfo
     
-    const result = await fetchWebPage(cleanUrl)
-    
-    if (!result) {
-        if (!muteErrorMessage) {
-            showToastMessage('Something went wrong')
-        }
-        return null
-    }
-
-    const {text,error} = result
-
-
-    if(error){
-      
-        if (!muteErrorMessage) {
-            showToastMessage(error)  
-        }
-
-        return null
-    }
-    
-    return parseHtmlStringWithConfig(text,configString,cleanUrl,protocol,domain)
+    return parseHtmlStringWithConfig(htmlString,configString,cleanUrl,protocol,domain)
    
 }
 
@@ -139,9 +117,7 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
 
 
 
-    const htmlParser = new DOMParser();
 
-    const htmlDoc = htmlParser.parseFromString(sanitizedHtml, 'text/html');
 
 
     const selectors = getSelectorsFromConfigString(configString)

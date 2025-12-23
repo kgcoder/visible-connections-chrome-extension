@@ -12,48 +12,19 @@ https://github.com/kgcoder/default-web
 
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
 import { escapeXml, showToastMessage } from "../helpers.js"
-import { fetchWebPage } from "../NetworkManager.js"
 
 
-export async function getPlainTextPageAndParseIt(cleanUrl,muteErrorMessage = false) {
+export async function parsePlainTextPage(content,cleanUrl) {
   
-    const match = cleanUrl.match(/^(?<protocol>https?):\/\/(?<domain>[^/]+)\/?(?<rest>.*?)$/)
 
-    if (!match) {
-        showToastMessage('Parsing error')
-        return null
-    }
-
-
-    const protocol = match.groups.protocol
-    const domain = match.groups.domain
-    
-
-    // g.crosshair.showSpinner()
-    
-    const result = await fetchWebPage(cleanUrl)
-    
-    if (!result) {
-        if (!muteErrorMessage) {
-            showToastMessage('Something went wrong')
+    const urlInfo = getProtocolAndDomainFromUrl(cleanUrl)
+        if(!urlInfo){
+            showToastMessage('Parsing error')
+            return null
         }
-        return null
-    }
     
-    const {text,error} = result
-   // g.crosshair.hideSpinner()
-
-    if(error){
-       
-        if (!muteErrorMessage) {
-            showToastMessage(error)  
-        }
-
-        return null
-    }
-
-
-    const content = text
+    const {protocol, domain} = urlInfo
+    
 
     let headerInfo = {}
 

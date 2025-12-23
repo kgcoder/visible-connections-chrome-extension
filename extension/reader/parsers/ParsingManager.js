@@ -14,60 +14,21 @@ import { showToastMessage } from "../helpers.js";
 import { fetchWebPage } from "../NetworkManager.js";
 import { parseCDOC } from "./CDOCParser.js";
 import { parseCondoc } from "./CondocParser.js";
-import { getHdocJsonAndContentFromHtml, getHtmlPageWithHDocAndParseIt } from "./EmbHDOCParser.js";
+import { getHdocJsonAndContentFromHtml, parseHtmlPageWithEmbeddedHDoc } from "./EmbHDOCParser.js";
 import { parseHDOC } from "./HDOCParser.js";
-import { getHtmlPageAndParseIt } from "./HtmlPageParser.js";
-import { getPlainTextPageAndParseIt } from "./PlainTextParser.js";
-import { checkWorpressPostOrPage } from "./WordpressParser.js";
+import { parseHtmlPage } from "./HtmlPageParser.js";
+import { parsePlainTextPage } from "./PlainTextParser.js";
 
 
 
 export async function loadStaticContentFromUrl(originalUrl, muteErrorMessage = false){
 
-    const configMatch = originalUrl.match(/^([^#]+)#pr=(.*?)$/)
 
-    if (configMatch) {
-
-        //const allowedKeys = ['c','t','r','a','d']
-
-        const cleanUrl = configMatch[1]
-        
-        let configString = configMatch[2]
-
-        // if (configString === 'wppost' || configString === 'wppage') {
-        //     const dataObject = await checkWorpressPostOrPage(originalUrl,configString,muteErrorMessage)
-        //     if (dataObject) return dataObject
-        //     return  
-        // }
-
-
-        if (configString === 'text') {
-            const dataObject = await getPlainTextPageAndParseIt(cleanUrl, muteErrorMessage)
-            if (dataObject) return dataObject
-            return
-        }
-
-
+    const urlToCall = originalUrl.split('#')[0].replace(/\?$/,'')
     
 
-    
-        const dataObject = await getHtmlPageAndParseIt(configString,cleanUrl)
-         
-        if (dataObject) return dataObject
-        return
 
-        
-       
-
-    }else if (originalUrl.includes('#')) {
-        originalUrl = originalUrl.split('#')[0]
-    }
-
-    originalUrl = originalUrl.replace(/\?$/,'')
-
-    let dataObject
-
-    const result = await fetchWebPage(originalUrl)
+    const result = await fetchWebPage(urlToCall)
 
     if (!result) {
         if (!muteErrorMessage) {
@@ -88,41 +49,73 @@ export async function loadStaticContentFromUrl(originalUrl, muteErrorMessage = f
         return
     }
 
-     dataObject = await parseStaticContent(text,originalUrl)
+    const {dataObject,error:parsingErrorMessage} = await parseStaticContent(text,originalUrl)
     
 
 
-    if(!dataObject){
-        //showToastMessage('Something is wrong with this collage (while parsing)',text)
+    if(dataObject){
+        if(dataObject.type === 'text'){
+            const {html,xmlString,connectedDocsData} = dataObject
+    
+            if(html.includes('<parsererror')){
+                showToastMessage('Error while parsing HTML')
+                return
+            }
+    
+            if(xmlString.includes('<parsererror')){
+                showToastMessage('Error while parsing XML')
+                return
+            }
+    
+            if(connectedDocsData.includes('<parsererror')){
+                showToastMessage('Error while parsing connected documents data')
+                return
+            }
+    
+        }
+
+        return dataObject //if HDOC, Embedded HDOC, CDOC, or CONDOC then ignore parsing rules
+      
+    }
+
+
+    const configMatch = originalUrl.match(/^([^#]+)#pr=(.*?)$/)
+
+    if (configMatch) {
+
+        //const allowedKeys = ['c','t','r','a','d']
+
+        const cleanUrl = configMatch[1]
+        
+        let configString = configMatch[2]
+
+  
+        if (configString === 'text') {
+            const dataObject = await parsePlainTextPage(text, cleanUrl)
+            if (dataObject) return dataObject
+            return
+        }
+
+
+    
+
+    
+        const dataObject = await parseHtmlPage(text,configString,cleanUrl)
+         
+        if (dataObject) return dataObject
         return
-    }
 
-
+    }else{
+        showToastMessage(parsingErrorMessage)
     
-    if(dataObject.type === 'text'){
-        const {html,xmlString,connectedDocsData} = dataObject
-
-        if(html.includes('<parsererror')){
-            showToastMessage('Error while parsing HTML')
-            return
-        }
-
-        if(xmlString.includes('<parsererror')){
-            showToastMessage('Error while parsing XML')
-            return
-        }
-
-        if(connectedDocsData.includes('<parsererror')){
-            showToastMessage('Error while parsing connected documents data')
-            return
-        }
-
     }
+
+ 
 
 
     
 
-    return dataObject
+    return null
     
 
 
@@ -138,35 +131,33 @@ export async function parseStaticContent(contentString, originalUrl) {
     const htmlMatch = contentString.match(/<html\b[^>]*>([\s\S]*?)<\/html>/im)
 
 
-
-
     if (condocMatch) {
         contentString = condocMatch[0]
-        return parseCondoc(originalUrl, contentString)
+        const dataObject = parseCondoc(originalUrl, contentString)
+        return {dataObject, error:!dataObject ? 'Something is wrong with the CONDOC' : null}
     }else if  (!collageMatch && hdocMatch) {
         contentString = hdocMatch[0]
-        return parseHDOC(originalUrl, hdocMatch[0])
+        const dataObject = parseHDOC(originalUrl, hdocMatch[0])
+        return {dataObject, error:!dataObject ? 'Something is wrong with the HDOC' : null}
     } else if (collageMatch && !hdocMatch) {
         contentString = collageMatch[0]
-        return  await parseCDOC(originalUrl, collageMatch[0])
+        const dataObject =  await parseCDOC(originalUrl, collageMatch[0])
+        return {dataObject, error:!dataObject ? 'Something is wrong with the CDOC' : null}
     } else if (htmlMatch) {
         
         const dataFromEmbeddedHDOC = getHdocJsonAndContentFromHtml(contentString)
         if (dataFromEmbeddedHDOC) {
             const {hdocDataJSON,content} = dataFromEmbeddedHDOC
-            return getHtmlPageWithHDocAndParseIt(originalUrl, content, hdocDataJSON)            
+            const dataObject = parseHtmlPageWithEmbeddedHDoc(originalUrl, content, hdocDataJSON)  
+            return {dataObject, error:!dataObject ? 'Something is wrong with the embedded HDOC' : null}          
         }
 
 
-        showToastMessage('Wrong document format')
-        return null
-
-     
+        return {dataObject:null,error:'Wrong document format'}
 
     }else if(!collageMatch && !hdocMatch) {
-        showToastMessage('Wrong document format')
-        return null
+        return {dataObject:null,error:'Wrong document format'}
     }   
 
-    return null
+    return {dataObject:null,error:'Something is wrong'}
 }

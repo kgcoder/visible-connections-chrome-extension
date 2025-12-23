@@ -47,7 +47,7 @@ window.addEventListener('initReader', async (e) => {
     loadUIAndIcons()
 
 
-    const dataObject = await parseStaticContent(contentString,url)
+    const {dataObject,error} = await parseStaticContent(contentString,url)
     if (dataObject.docType === 'c') {
         await g.pdm.loadCollage(dataObject)
     } else if(dataObject.docType === 'h'){

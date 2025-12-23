@@ -14,7 +14,7 @@ import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getXMlAndDataArrayFromJ
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
 
 
-export function getHtmlPageWithHDocAndParseIt(httpPageUrl, contentString, hdocDataJSON) {
+export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDataJSON) {
     const match = httpPageUrl.match(/(https?):\/\/(([^/]*)\/?.*?)$/i)
     if (!match) {
         showToastMessage('Parsing error')
