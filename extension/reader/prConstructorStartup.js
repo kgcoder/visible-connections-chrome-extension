@@ -229,7 +229,7 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
         const titleSelectorLabel = document.getElementById("title-selector-label")
         titleSelectorLabel.innerText = `Title selector (1/${possibleTitleSelectors.length})`
-        if(titleSelectors){
+        if(titleSelectors.length){
             titleSelectorInput.value = titleSelectors[0]
 
         }
