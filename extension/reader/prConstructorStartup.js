@@ -214,7 +214,7 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
     if(result){
 
-        const {contentSelectors,titleSelectors, additionalForbiddenTags} = result 
+        const {contentSelectors,titleSelectors} = result 
 
         possibleContentSelectors = contentSelectors
         possibleTitleSelectors = titleSelectors
@@ -233,7 +233,6 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
             titleSelectorInput.value = titleSelectors[0]
 
         }
-        removeSelectorsTextarea.value = additionalForbiddenTags.join('\n')
 
         constructFullUrl()
 
@@ -485,13 +484,9 @@ function guessParsingRules(){
     if (!match) return null
 
 
-    const domain = match.groups.domain
 
 
-    let additionalForbiddenTags = []
-    if (domain.includes('wikipedia.org')) {
-        additionalForbiddenTags = ['.navbox','.sidebar', '.mw-editsection']
-    }
+ 
 
 
 
@@ -538,7 +533,7 @@ function guessParsingRules(){
     }
 
 
-    return {isText:false,contentSelectors:selectorsThatWorked,titleSelectors:titleSelectorsThatWorked,additionalForbiddenTags}
+    return {isText:false,contentSelectors:selectorsThatWorked,titleSelectors:titleSelectorsThatWorked}
 
 
 }

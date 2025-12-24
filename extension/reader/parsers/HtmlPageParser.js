@@ -109,9 +109,6 @@ export function parseHtmlStringWithConfig(htmlString,configString,cleanUrl,proto
     let publicationDate
 
 
-    const sanitizedHtml = sanitizeHtml(htmlString)
-
-
     const unsanitizedHtmlParser = new DOMParser();
     const unsanitizedHtmlDoc = unsanitizedHtmlParser.parseFromString(htmlString, 'text/html');
 

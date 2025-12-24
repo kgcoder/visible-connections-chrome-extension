@@ -74,6 +74,11 @@ export async function loadStaticContentFromUrl(originalUrl, muteErrorMessage = f
     
         }
 
+        if(dataObject.docSubtype === 7 && !dataObject.needsMainDocWithUrl){
+            showToastMessage('Something is wrong with the URL of the main document in this CONDOC')
+            return
+        }
+
         return dataObject //if HDOC, Embedded HDOC, CDOC, or CONDOC then ignore parsing rules
       
     }
