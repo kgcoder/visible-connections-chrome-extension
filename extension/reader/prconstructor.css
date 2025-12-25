@@ -16,7 +16,7 @@ body{
     min-height:50px;
     /* flex-shrink: 0; */
     gap:10px;
-    background-color: rgba(37, 38, 39, 0.1);
+    background-color: #E9E9E9;
     align-items: center;
     padding-left: 20px;
     padding-right: 20px;
@@ -87,7 +87,7 @@ h1 {
     display: flex;
     flex-direction: column;
     width:500px;
-    background-color: rgba(37, 38, 39, 0.1);
+    background-color: #E9E9E9;;
     padding: 20px;
     min-height: 0; 
     overflow-y: auto;
@@ -200,12 +200,69 @@ align-self: flex-start;
 
     width: 80%;
     height:400px;
+    border-radius: 8px;
 
     flex-direction: column;
 
-    background-color: lightgray;
+    background-color: #E9E9E9;
 
     padding:10px;
+
+}
+
+
+#condoc-popup{
+    display: none;
+    position: absolute;
+    left: 50%;
+    top:50%;
+    transform: translate(-50%, -50%);
+
+    width: 80%;
+    height:700px;
+    border-radius: 8px;
+
+    flex-direction: column;
+
+    background-color: #E9E9E9;
+
+    padding:10px;
+
+}
+
+.vertical-space-10{
+    height:10px;
+}
+
+#condoc-source-code {
+    display: flex;
+    position: relative;
+    /* flex:1; */
+    /* box-sizing: border-box; */
+    overflow: hidden;
+    flex:1;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+
+    overflow-x: auto;
+    overflow-y: auto;
+    /* flex-grow: 0; */
+
+    margin-top: 3px;
+
+
+    background-color: white;
+    min-height: 48px;
+    border-radius: 3px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(37, 38, 39, 0.7);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    box-sizing: border-box;
 
 }
 
@@ -217,11 +274,11 @@ align-self: flex-start;
 
 }
 
-#parsing-list-buttons-row{
+.buttons-row{
     display: flex;
     justify-content: space-around;
-    flex:1;
     align-items: center;
+    margin-top: 10px;
 
 }
 

@@ -80,10 +80,14 @@
                         <button id="save-parsing-rules-button" class="update-btn">Save</button>
                         <button id="apply-saved-parsing-rules-button" class="update-btn">Apply saved</button>
                         <button id="delete-parsing-rules-button" class="update-btn">Delete saved</button>
-
                     </div>
 
-                    <button id="parsing-rules-for-all-websites-button" class="update-btn">Show parsing rules for all websites</button>
+                    <div style="display: flex; flex:1;gap:20px; align-items: center;">
+                        <button id="parsing-rules-for-all-websites-button">Show parsing rules for all websites</button>
+                        <a href="https://reinventingtheweb.com/list-of-parsing-rules/" target="_blank">List</a>
+                    </div>
+
+                    <button id="create-condoc-button" class="update-btn">Create CONDOC</button>
 
 
                     <div>
@@ -99,10 +103,35 @@
     <div id="overlay"></div>
 
     <div id="parsing-rules-list-popup">
+        <h2>List of saved parsing rules</h2>
         <textarea id="parsing-rules-list-textarea"></textarea>
-        <div id="parsing-list-buttons-row">
+        <div id="parsing-list-buttons-row" class="buttons-row">
             <button id="parsing-rules-list-close-button">Close</button>
             <button id="parsing-rules-list-save-button">Save</button>
+            <a href="https://reinventingtheweb.com/list-of-parsing-rules/" target="_blank">List</a>
+        </div>
+    </div>
+
+    <div id="condoc-popup">
+        <h2>CONDOC editor</h2>
+        <div style="display: flex; gap:5px;align-items: flex-end;">
+            <div class="field" style="display: flex; flex:1;">
+                <label id="condoc-title-label" for="condocTitleInput">Title</label>
+                <input id="condoc-title-input" type="text" />
+            </div>
+            <button id="condoc-default-title-button" style="height: 36px; display: none;">Use title from the page</button>
+        </div>
+        <div class="vertical-space-10"></div>
+        <div class="field">
+            <label id="condoc-description-label" for="condocDescriptionInput">Description</label>
+            <input id="condoc-description-input" type="text" />
+        </div>
+        <div class="vertical-space-10"></div>
+        <strong>Source code</strong>
+        <div id="condoc-source-code"></div>
+        <div id="condoc-buttons-row" class="buttons-row">
+            <button id="condoc-close-button">Close</button>
+            <button id="condoc-copy-button">Copy source code</button>
         </div>
     </div>
 </body>

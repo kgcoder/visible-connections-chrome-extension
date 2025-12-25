@@ -11,7 +11,7 @@ https://github.com/kgcoder/default-web
 */
 
 import g from "./Globals.js"
-import { copyDataToClipboard, getProtocolAndDomainFromUrl, replaceMediaTagsWithLinksInDiv, sanitizeHtml, showToastMessage } from "./helpers.js";
+import { copyDataToClipboard, getProtocolAndDomainFromUrl, replaceMediaTagsWithLinksInDiv, sanitizeHtml, showToastMessage, escapeXml, escapeHTML } from "./helpers.js";
 import IconsInfo from "./Icons.js";
 import { getObjectFromLocalStorage, saveObjectInLocalStorage } from "./LocalStorageManager.js";
 import { getSelectorsFromConfigString, parseHtmlStringWithConfig } from "./parsers/HtmlPageParser.js";
@@ -29,6 +29,9 @@ let possibleTitleSelectors = []
 let currentPossibleContentSelectorIndex = 0
 let currentPossibleTitleSelectorIndex = 0
 let savedParsingRules = ''
+
+let initialCondocTitle = ''
+let condocTitleWasShownOnce = false
 
 
 // List of selectors to try in order
@@ -114,6 +117,8 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     const savedParsingRulesSpan = document.getElementById("saved-parsing-rules-span")
 
     const allWebsitesParsingRulesButton = document.getElementById("parsing-rules-for-all-websites-button")
+
+    const condocCreationButton = document.getElementById("create-condoc-button")
     
 
     const overlayDiv = document.getElementById("overlay")
@@ -123,13 +128,56 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
     const allWebsitesSaveButton = document.getElementById("parsing-rules-list-save-button")
 
 
+
+    const condocPopup = document.getElementById("condoc-popup")
+    const condocTitleInput = document.getElementById("condoc-title-input")
+    const condocDefaultTitleButton = document.getElementById("condoc-default-title-button")
+    const condocDescriptionInput = document.getElementById("condoc-description-input")
+
+    const condocSourceCodeDiv = document.getElementById("condoc-source-code")
+
+    const condocCloseButton = document.getElementById("condoc-close-button")
+    const condocCopyButton = document.getElementById("condoc-copy-button")
+
+
+
+    condocTitleInput.addEventListener('input',updateCondocSourceCode)
+    condocDescriptionInput.addEventListener('input',updateCondocSourceCode)
+
+
+    condocDefaultTitleButton.addEventListener('click',(e) => {
+        e.preventDefault()
+        condocTitleInput.value = initialCondocTitle
+        updateCondocSourceCode()
+
+    })
+    condocCloseButton.addEventListener('click',(e) => {
+        e.preventDefault()
+        overlayDiv.style.display = 'none'
+        condocPopup.style.display = 'none'
+    })
+
+    condocCopyButton.addEventListener('click',(e) => {
+        e.preventDefault()
+
+        const condocXml = condocSourceCodeDiv.innerText
+
+        copyDataToClipboard(condocXml)
+
+        showToastMessage('Source code was copied to clipboard') 
+    })
+
+
+
+
+
     applySavedParsingRulesButton.style.display = 'none'
     deleteParsingRulesButton.style.display = 'none'
 
 
     const { url, contentString, } = e.detail;
 
-    originalUrl = url
+    originalUrl = url.split('#')[0].replace(/\?$/,'')
     originalContentString = contentString
 
 
@@ -171,6 +219,27 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
         allWebsitesPopup.style.display = 'flex'
 
         allWebsitesTextArea.value = array.filter(item => !!item.trim()).join('\n')
+    })
+
+    condocCreationButton.addEventListener('click',(e) => {
+        e.preventDefault()
+
+        const titleEl = document.querySelector('div#pageHeader h1')
+        const title = (titleEl ? titleEl.textContent : '').trim()
+        initialCondocTitle = title
+
+        if(!condocTitleInput.value.trim() && !condocTitleWasShownOnce){
+            condocTitleInput.value = title
+            condocTitleWasShownOnce = true
+        }
+        
+
+
+        updateCondocSourceCode()
+        
+        overlayDiv.style.display = 'flex'
+        condocPopup.style.display = 'flex'
+
     })
 
 
@@ -377,6 +446,34 @@ window.addEventListener('initParsingRulesConstructor', async (e) => {
 
 
 
+
+
+function updateCondocSourceCode(){
+    const condocTitleInput = document.getElementById("condoc-title-input")
+    const condocDefaultTitleButton = document.getElementById("condoc-default-title-button")
+
+    const condocDescriptionInput = document.getElementById("condoc-description-input")
+
+    const condocSourceCodeDiv = document.getElementById("condoc-source-code")
+
+
+
+    const titleXml = condocTitleInput.value.trim() ? `\n\n<title>${escapeXml(condocTitleInput.value.trim())}</title>` : ''
+
+    const desctiptionXml = condocDescriptionInput.value.trim() ? `\n\n<description>${escapeXml(condocDescriptionInput.value.trim())}</description>` : ''
+
+
+    const xmlString = `<condoc>${titleXml}${desctiptionXml}\n\n<main>${escapeXml(finalUrl)}</main>\n\n</condoc>`
+
+    condocSourceCodeDiv.innerText = xmlString
+
+
+    condocDefaultTitleButton.style.display = condocTitleInput.value.trim() === initialCondocTitle.trim() ? 'none' : 'flex'
+
+}
+
+
+
 function loadParsingRulesFromString(prString){
     if(!prString)return
 
@@ -565,19 +662,16 @@ function renderPage(){
 
     const pageDiv = document.getElementById("pageDiv")
    
-    pageDiv.innerHTML = dataObject.isPlainText ? escapeHTML(dataObject.html) : dataObject.html
+    pageDiv.innerHTML = dataObject.html
     
 
     const headerDiv = document.getElementById("pageHeader")
     populateHeaderDiv(headerDiv,dataObject.headerInfo)
     
-    if (dataObject.isPlainText) {
-        pageDiv.style.wordWrap = 'break-word'
-        pageDiv.style.whiteSpace = 'pre-wrap' 
-    } else {
-        pageDiv.style.wordWrap = ''
-        pageDiv.style.whiteSpace = ''
-    }
+  
+    pageDiv.style.wordWrap = ''
+    pageDiv.style.whiteSpace = ''
+    
 
 
 
