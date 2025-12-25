@@ -163,15 +163,14 @@
   
   .theme-sepia pre {
     background-color: #f0e0c9;
-    padding: 0.8em;
     border-radius: 6px;
+    padding: 1em;
     border: 1px solid #d4bfa3;
     overflow-x: auto;
   }
 
   .theme-sepia code {
       background-color: #f0e0c9;
-      padding: 0.2em 0.4em;
       border-radius: 3px;
   }
 

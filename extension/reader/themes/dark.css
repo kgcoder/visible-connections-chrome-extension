@@ -144,13 +144,12 @@
     font-family: "Fira Code", monospace;
     background-color: #3a3a3a;
     color: #e8e8e8;
-    padding: 1px;
     /* padding: 0.2em 0.4em; */
     border-radius: 4px;
   }
   
   .theme-dark pre {
-    padding: 0.8em;
+    padding: 1em;
     overflow-x: auto;
   }
   
