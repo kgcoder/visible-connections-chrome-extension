@@ -1069,6 +1069,8 @@ class ReadingManager {
 
     drawAllPointsOnLeftCollage() {
 
+        const collageViewer = g.readingManager.mainCollageViewer
+
         for (const flinksData of this.connections) {
             if(!flinksData.activeFlinks)continue
             for(let flink of flinksData.activeFlinks){
@@ -1076,9 +1078,7 @@ class ReadingManager {
                 const leftEnd = flink.leftEnds[0]
                 const { x, y, radius } = leftEnd
     
-                const collageViewer = g.readingManager.mainCollageViewer
-    
-                 const relCoordinates = collageViewer.getRelativePoint(x,y) 
+                const relCoordinates = collageViewer.getRelativePoint(x,y) 
                 if(!relCoordinates)return
                 const {xRel, yRel} = relCoordinates 
     

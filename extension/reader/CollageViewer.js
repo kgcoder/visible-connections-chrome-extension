@@ -349,6 +349,9 @@ class CollageViewer{
 
     update(deltaT) {
         if(!this.content)return
+
+        this.canvasWidth = !g.readingManager.isFullScreen ? g.readingManager.docWidth : window.innerWidth
+        this.canvasHeight = window.innerHeight - this.topY
         
         this.viewport.w = this.canvasWidth
         this.viewport.h = this.canvasHeight
@@ -526,13 +529,13 @@ class CollageViewer{
 
     render() {
 
-        this.canvas.style.width = `${window.innerWidth}px`
-        this.canvas.style.height = `${window.innerHeight - this.topY}px`
-    
+        this.canvas.style.width = `${this.canvasWidth}px`
+        this.canvas.style.height = `${this.canvasHeight}px`
+
    
-        this.viewport.w = window.innerWidth
-        this.viewport.h = window.innerHeight - this.topY
-    
+        this.viewport.w = this.canvasWidth
+        this.viewport.h = this.canvasHeight
+
 
 
         this.setupDPR()
