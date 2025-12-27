@@ -2825,6 +2825,8 @@ class ReadingManager {
         this.checkIfFlinksWereChangedOnTheLeftSide()
         this.checkIfFlinksWereChangedOnTheRightSide()
 
+        this.redrawFlinks()
+
     }
 
 
