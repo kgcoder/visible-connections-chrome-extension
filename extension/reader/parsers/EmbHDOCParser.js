@@ -165,9 +165,6 @@ export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDa
         if (topPanelString || sidePanelString || bottomPanelString) {
             panelsString = `\n\n<panels>${topPanelString}${sidePanelString}${bottomPanelString}\n</panels>\n\n`     
         }
-    } else {
-        //if panels are not found, we need to add the top panel with the site name
-        panelsString = `\n\n<panels>\n<top>\n<site-name href="${protocol}://${domain}">${domain}</site-name>\n</top>\n</panels>\n\n`
     }
 
     const headerInfo = {}

@@ -11,7 +11,7 @@ https://github.com/kgcoder/default-web
 */
 
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
-import { escapeXml, showToastMessage } from "../helpers.js"
+import { escapeXml, getProtocolAndDomainFromUrl, showToastMessage } from "../helpers.js"
 
 
 export async function parsePlainTextPage(content,cleanUrl) {

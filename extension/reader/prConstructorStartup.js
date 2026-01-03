@@ -37,7 +37,6 @@ let condocTitleWasShownOnce = false
 // List of selectors to try in order
 const selectors = [
     
-
     //Wikipedia
     '.mw-body-content',
 
@@ -51,7 +50,7 @@ const selectors = [
     '.main-content',
     '.supercontentwrapper',
 
-        // Semantic
+    // Semantic
     'main',
     'article',
     '[role="main"]',
@@ -94,6 +93,14 @@ const selectors = [
     'body'
 
     
+];
+
+
+const headerSelectors = [
+        'h1',                        // plain h1
+        'header h1',                 // h1 inside a <header>
+        '.entry-title',               // common WP class
+        '.post-title'                // another common one                  
 ];
 
 
@@ -612,12 +619,7 @@ function guessParsingRules(){
 
 
     // Try multiple possible selectors for the page/post title
-    const headerSelectors = [
-        'h1',                        // plain h1
-        'header h1',                 // h1 inside a <header>
-        '.entry-title',               // common WP class
-        '.post-title'                // another common one                  
-    ];
+  
 
     let headerEl = null;
 
